@@ -1,0 +1,17 @@
+{
+  "name": "Kitchen Order",
+  "short_name": "Kitchen",
+  "description": "Premium Food Ordering directly from our kitchen.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f5ff",
+  "theme_color": "#FF5200",
+  "icons": [
+    {
+      "src": "/next.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
