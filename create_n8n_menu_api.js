@@ -52,9 +52,22 @@ const menu = menuData
     const row = item.json;
     let addons = [];
     try {
-      if (row['Add-ons']) addons = JSON.parse(row['Add-ons']);
+      const addonStr = row['Add-ons'] || '';
+      if (addonStr.trim().startsWith('[') || addonStr.trim().startsWith('{')) {
+        // try JSON
+        addons = JSON.parse(addonStr);
+      } else if (addonStr.trim()) {
+        // try Simple Text: "Extra Cheese: 30, No Onions: 0"
+        addons = addonStr.split(',').map(part => {
+          const [name, price] = part.split(':');
+          return {
+            name: (name || '').trim(),
+            price: Number((price || '0').trim()) || 0
+          };
+        }).filter(a => a.name);
+      }
     } catch (e) {
-      console.log("Empty or invalid addons JSON for: " + row['Name']);
+      console.log("Error parsing addons for: " + row['Name'], e.message);
     }
     
     return {
@@ -215,7 +228,17 @@ return {
       body: JSON.stringify(workflowSpec)
     });
     const data = await res.json();
-    console.log("Response:", JSON.stringify(data, null, 2));
+    if (data.id) {
+      console.log("✅ Workflow Created! ID:", data.id);
+      await fetch(host + '/api/v1/workflows/' + data.id + '/activate', {
+        method: 'POST',
+        headers: { 'X-N8N-API-KEY': token }
+      });
+      console.log("✅ Workflow Activated!");
+      console.log("📡 Menu API URL: " + host + "/webhook/menu");
+    } else {
+      console.log("❌ Error:", JSON.stringify(data, null, 2));
+    }
   } catch (err) {
     console.error("Error creating workflow:", err.message);
   }
