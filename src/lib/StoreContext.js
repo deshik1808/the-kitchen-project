@@ -33,6 +33,7 @@ export function StoreProvider({ children }) {
           cachedData = JSON.parse(cached);
           setStoreData(cachedData);
           if (cachedData.branding) applyTheme(cachedData.branding);
+          if (cachedData.store?.faviconUrl) updateFavicon(cachedData.store.faviconUrl);
           setLoading(false);
         }
       } catch (e) {}
@@ -45,6 +46,12 @@ export function StoreProvider({ children }) {
         sessionStorage.setItem('storeDataTime', Date.now().toString());
         if (freshData.branding) applyTheme(freshData.branding);
         if (freshData.store?.name) document.title = freshData.store.name;
+        
+        // DYNAMIC FAVICON UPDATE
+        if (freshData.store?.faviconUrl) {
+          updateFavicon(freshData.store.faviconUrl);
+        }
+
         setLoading(false);
       } else if (!cachedData) {
         setError('Failed to load menu data.');
@@ -53,6 +60,20 @@ export function StoreProvider({ children }) {
     }
 
     initStore();
+
+    function updateFavicon(url) {
+      try {
+        let link = document.querySelector("link[rel~='icon']");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.getElementsByTagName('head')[0].appendChild(link);
+        }
+        link.href = url;
+      } catch (e) {
+        console.error('Failed to update favicon:', e);
+      }
+    }
 
     // REAL-TIME SYNC: Silently refetch when user returns to tab
     const silentRefetch = async () => {
@@ -63,6 +84,9 @@ export function StoreProvider({ children }) {
           sessionStorage.setItem('storeData', JSON.stringify(freshData));
           sessionStorage.setItem('storeDataTime', Date.now().toString());
           if (freshData.branding) applyTheme(freshData.branding);
+          if (freshData.store?.faviconUrl) {
+            updateFavicon(freshData.store.faviconUrl);
+          }
         }
       }
     };
