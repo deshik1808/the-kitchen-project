@@ -218,6 +218,29 @@ return {
     }
   };
 
+  async function cleanupDuplicates(nameFilter) {
+    try {
+      const res = await fetch(host + '/api/v1/workflows', {
+        headers: { 'X-N8N-API-KEY': token }
+      });
+      const data = await res.json();
+      const workflows = data.data || [];
+      for (const w of workflows) {
+        if (w.name.includes(nameFilter) && w.active) {
+          console.log(`Deactivating old duplicate: ${w.name} (${w.id})`);
+          await fetch(`${host}/api/v1/workflows/${w.id}/deactivate`, {
+            method: 'POST',
+            headers: { 'X-N8N-API-KEY': token }
+          });
+        }
+      }
+    } catch (e) {
+      console.log("Cleanup failed, proceeding with creation...");
+    }
+  }
+
+  await cleanupDuplicates("Kitchen Menu API");
+
   try {
     const res = await fetch(host + '/api/v1/workflows', {
       method: 'POST',

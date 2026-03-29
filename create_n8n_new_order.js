@@ -36,12 +36,27 @@ const now = new Date();
 const orderId = "ORD-" + ((now.getMonth()+1).toString().padStart(2,'0')) + (now.getDate().toString().padStart(2,'0')) + "-" + Math.floor(1000 + Math.random() * 9000);
 
 const adminPhone = storeSettings['Admin Phone'] || "";
+const storePhone = storeSettings['Store Phone'] || "919876543210";
+let itemText = body.items.map(i => "• " + i.name + " x " + i.qty).join("%0A");
+const waText = "🍽 *New Order: " + orderId + "*%0A%0A" +
+    "*Customer:* " + body.customer.name + "%0A" +
+    "*Phone:* " + body.customer.phone + "%0A" +
+    "*Type:* " + body.deliveryType.toUpperCase() + "%0A%0A" +
+    "*Items:*%0A" + itemText + "%0A%0A" +
+    "*Subtotal:* Rs." + subtotal + "%0A" +
+    (discountAmount > 0 ? "*Discount:* -Rs." + discountAmount + "%0A" : "") +
+    (total - (subtotal - discountAmount) > 0 ? "*Delivery:* Rs." + (total - (subtotal - discountAmount)) + "%0A" : "") +
+    "*Total:* *Rs." + total + "*%0A%0A" +
+    (body.deliveryType === 'delivery' ? "*Address:* " + body.address : "") +
+    (body.notes ? "%0A*Notes:* " + body.notes : "");
+const waLink = "https://wa.me/" + storePhone + "?text=" + waText;
+
 const callMeBotKey = storeSettings['CallMeBot API Key'] || "";
 let callMeBotUrl = "";
 if (adminPhone && callMeBotKey) {
-  const textMsg = "🍽 *NEW ORDER:* " + orderId + "\n" +
-                  "🧑 " + body.customer.name + " (" + body.customer.phone + ")\n" +
-                  "💰 Total: Rs." + total + "\n" +
+  const textMsg = "🍽 *NEW ORDER:* " + orderId + "\\n" +
+                  "🧑 " + body.customer.name + " (" + body.customer.phone + ")\\n" +
+                  "💰 Total: Rs." + total + "\\n" +
                   "💳 Paid: " + body.paymentMethod;
   callMeBotUrl = "https://api.callmebot.com/whatsapp.php?phone=" + adminPhone.replace(/\\+/g,'') + "&text=" + encodeURIComponent(textMsg) + "&apikey=" + callMeBotKey;
 }
@@ -98,23 +113,23 @@ return {
           authentication: "serviceAccount", operation: "append", documentId: { __rl: true, value: spreadsheetId, mode: "id" }, sheetName: { __rl: true, value: "Orders", mode: "name" },
           columns: {
             mappingMode: "defineBelow",
-            value: [
-              { column: "Order ID", value: "={{ $json.sheet_OrderId }}" },
-              { column: "Timestamp", value: "={{ $json.sheet_Timestamp }}" },
-              { column: "Customer Name", value: "={{ $json.sheet_CustomerName }}" },
-              { column: "Phone", value: "={{ $json.sheet_Phone }}" },
-              { column: "Items", value: "={{ $json.sheet_Items }}" },
-              { column: "Subtotal", value: "={{ $json.sheet_Subtotal }}" },
-              { column: "Discount Code", value: "={{ $json.sheet_DiscountCode }}" },
-              { column: "Discount Amount", value: "={{ $json.sheet_DiscountAmount }}" },
-              { column: "Delivery Fee", value: "={{ $json.sheet_DeliveryFee }}" },
-              { column: "Total", value: "={{ $json.sheet_Total }}" },
-              { column: "Payment Method", value: "={{ $json.sheet_Method }}" },
-              { column: "Order Status", value: "New" },
-              { column: "Delivery Type", value: "={{ $json.sheet_Type }}" },
-              { column: "Address", value: "={{ $json.sheet_Address }}" },
-              { column: "Notes", value: "={{ $json.sheet_Notes }}" }
-            ]
+            value: {
+              "Order ID": "={{ $json.sheet_OrderId }}",
+              "Timestamp": "={{ $json.sheet_Timestamp }}",
+              "Customer Name": "={{ $json.sheet_CustomerName }}",
+              "Phone": "={{ $json.sheet_Phone }}",
+              "Items": "={{ $json.sheet_Items }}",
+              "Subtotal": "={{ $json.sheet_Subtotal }}",
+              "Discount Code": "={{ $json.sheet_DiscountCode }}",
+              "Discount Amount": "={{ $json.sheet_DiscountAmount }}",
+              "Delivery Fee": "={{ $json.sheet_DeliveryFee }}",
+              "Total": "={{ $json.sheet_Total }}",
+              "Payment Method": "={{ $json.sheet_Method }}",
+              "Order Status": "New",
+              "Delivery Type": "={{ $json.sheet_Type }}",
+              "Address": "={{ $json.sheet_Address }}",
+              "Notes": "={{ $json.sheet_Notes }}"
+            }
           }, options: {}
         },
         name: "Save Order", type: "n8n-nodes-base.googleSheets", typeVersion: 4, position: [850, 300], credentials: { googleApi: { id: credentialId } }
@@ -141,6 +156,27 @@ return {
       "IF Bot Ready": { main: [[{ node: "CallMeBot API", type: "main", index: 0 }]] }
     }
   };
+
+  async function cleanupDuplicates(nameFilter) {
+    try {
+      const res = await fetch(host + '/api/v1/workflows', {
+        headers: { 'X-N8N-API-KEY': token }
+      });
+      const data = await res.json();
+      const workflows = data.data || [];
+      for (const w of workflows) {
+        if (w.name.includes(nameFilter) && w.active) {
+          console.log(`Deactivating old duplicate: ${w.name} (${w.id})`);
+          await fetch(`${host}/api/v1/workflows/${w.id}/deactivate`, {
+            method: 'POST',
+            headers: { 'X-N8N-API-KEY': token }
+          });
+        }
+      }
+    } catch (e) {}
+  }
+
+  await cleanupDuplicates("Kitchen New Order");
 
   try {
     const res = await fetch(host + '/api/v1/workflows', {

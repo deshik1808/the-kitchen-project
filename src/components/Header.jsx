@@ -36,14 +36,14 @@ export default function Header() {
     <header className="site-header">
       <div className="header-inner">
         <Link href="/" className="logo-link">
-          {branding.logoUrl ? (
-            <img src={branding.logoUrl} alt={store.name} className="logo-img" />
-          ) : (
-            <div className="logo-text">
+          <div className="logo-container">
+            {branding.logoUrl ? (
+              <img src={branding.logoUrl} alt={store.name} className="logo-img" />
+            ) : (
               <span className="logo-icon">🍽</span>
-              <span className="logo-name">{store.name}</span>
-            </div>
-          )}
+            )}
+            <span className="logo-name">{store.name}</span>
+          </div>
         </Link>
 
         <Link href="/cart" className="cart-btn" aria-label="View Cart">
@@ -71,9 +71,9 @@ export default function Header() {
           justify-content: space-between;
           align-items: center;
         }
-        .logo-link { display: flex; align-items: center; }
-        .logo-img { max-height: 36px; object-fit: contain; }
-        .logo-text { display: flex; align-items: center; gap: 8px; }
+        .logo-link { display: flex; align-items: center; text-decoration: none; }
+        .logo-container { display: flex; align-items: center; gap: 10px; }
+        .logo-img { max-height: 32px; width: auto; border-radius: 4px; object-fit: contain; }
         .logo-icon { font-size: 1.5rem; }
         .logo-name {
           font-family: var(--font-display);

@@ -1,0 +1,235 @@
+{
+  "updatedAt": "2026-03-27T17:00:28.134Z",
+  "createdAt": "2026-03-27T17:00:27.991Z",
+  "id": "XGts64QcSsq5v4hX",
+  "name": "🚀 Kitchen New Order [Linear]",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-order",
+        "responseMode": "responseNode"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ],
+      "webhookId": "kitchen-new-order-linear",
+      "id": "5617588b-c874-421e-8bfc-8fdb63c0c038"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "1Hrn3MbWGud0yUPblTt0EjHD_9BBD-0R1IYFuZ6GB9nw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Settings",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "name": "Get Settings",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        300,
+        300
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "oTYKOsLDCXf4qSSD",
+          "name": "31Kitchens_Service_Account"
+        }
+      },
+      "id": "f90d8197-ae5b-4f5b-9ee5-23024d69b4c1"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "1Hrn3MbWGud0yUPblTt0EjHD_9BBD-0R1IYFuZ6GB9nw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Discounts",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "name": "Get Discounts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        500,
+        300
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "oTYKOsLDCXf4qSSD",
+          "name": "31Kitchens_Service_Account"
+        }
+      },
+      "id": "ac3da32c-ed60-48d3-b745-3121171bc353"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// 1. Get Webhook Data\nconst webhookData = $node[\"Webhook\"].getMatchingItem().json.body;\n\n// 2. Get Settings\nconst settingsRows = $node[\"Get Settings\"].getMatchingItem();\nconst settingsAll = $items(\"Get Settings\");\nconst storeSettings = {};\nsettingsAll.forEach(s => {\n  storeSettings[s.json.Label] = s.json.Value;\n});\n\n// 3. Get Discounts\nconst discountsAll = $items(\"Get Discounts\");\n\n// 4. Re-calculate Totals\nlet subtotal = 0;\nwebhookData.items.forEach(item => {\n  const addonsPrice = (item.addons || []).reduce((sum, a) => sum + (Number(a.price) || 0), 0);\n  subtotal += (Number(item.price) + addonsPrice) * Number(item.qty);\n});\n\n// 5. Validate Discount\nlet discountAmount = 0;\nlet discountCode = (webhookData.discountCode || \"\").trim().toUpperCase();\nif (discountCode) {\n  const match = discountsAll.find(d => (d.json.Code || \"\").trim().toUpperCase() === discountCode);\n  if (match && match.json.Active === 'Y') {\n    const d = match.json;\n    const type = (d.Type || \"\").toLowerCase();\n    const val = Number(d.Value || 0);\n    const minOrder = Number(d['Min Order'] || 0);\n    const maxD = Number(d['Max Discount'] || 99999);\n    \n    if (subtotal >= minOrder) {\n      discountAmount = type === 'percent' ? Math.round(subtotal * val / 100) : val;\n      discountAmount = Math.min(discountAmount, maxD, subtotal);\n    }\n  }\n}\n\n// 6. Fee & Total\nconst deliveryFee = (webhookData.deliveryType === 'delivery') ? Number(storeSettings['Delivery Fee'] || 0) : 0;\nconst total = subtotal - discountAmount + deliveryFee;\n\n// 7. Gen ID\nconst now = new Date();\nconst dateStr = (now.getMonth() + 1).toString().padStart(2, '0') + now.getDate().toString().padStart(2, '0');\nconst random = Math.floor(1000 + Math.random() * 9000);\nconst orderId = \"ORD-\" + dateStr + \"-\" + random;\n\n// 8. Build WhatsApp link\nconst storePhone = storeSettings['Store Phone'] || \"919876543210\";\nlet itemText = webhookData.items.map(i => \"• \" + i.name + \" x \" + i.qty).join(\"%0A\");\nconst waText = \"🍽 *New Order: \" + orderId + \"*%0A%0A\" +\n    \"*Customer:* \" + webhookData.customer.name + \"%0A\" +\n    \"*Phone:* \" + webhookData.customer.phone + \"%0A\" +\n    \"*Type:* \" + webhookData.deliveryType.toUpperCase() + \"%0A%0A\" +\n    \"*Items:*%0A\" + itemText + \"%0A%0A\" +\n    \"*Subtotal:* Rs.\" + subtotal + \"%0A\" +\n    (discountAmount > 0 ? \"*Discount:* -Rs.\" + discountAmount + \"%0A\" : \"\") +\n    (deliveryFee > 0 ? \"*Delivery:* Rs.\" + deliveryFee + \"%0A\" : \"\") +\n    \"*Total:* *Rs.\" + total + \"*%0A%0A\" +\n    (webhookData.deliveryType === 'delivery' ? \"*Address:* \" + webhookData.address : \"\") +\n    (webhookData.notes ? \"%0A*Notes:* \" + webhookData.notes : \"\");\n\nconst waLink = \"https://wa.me/\" + storePhone + \"?text=\" + waText;\n\nreturn {\n  json: {\n    \"Order ID\": orderId,\n    \"Timestamp\": now.toLocaleString(),\n    \"Customer Name\": webhookData.customer.name,\n    \"Phone\": webhookData.customer.phone,\n    \"Items\": JSON.stringify(webhookData.items),\n    \"Subtotal\": subtotal,\n    \"Discount Code\": discountCode,\n    \"Discount Amount\": discountAmount,\n    \"Delivery Fee\": deliveryFee,\n    \"Total\": total,\n    \"Payment Method\": webhookData.paymentMethod,\n    \"Payment Status\": \"Pending\",\n    \"Order Status\": \"New\",\n    \"Delivery Type\": webhookData.deliveryType,\n    \"Address\": webhookData.address || \"N/A\",\n    \"Notes\": webhookData.notes || \"\",\n    \"Razorpay Link\": \"\",\n    \"WhatsApp Sent\": \"N\",\n    \"waLink\": waLink,\n    \"upiQrUrl\": storeSettings['UPI QR Image URL'] || \"\"\n  }\n};\n"
+      },
+      "name": "Logic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        750,
+        300
+      ],
+      "id": "bde66034-52cc-478f-9256-917fd2a8f93d"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Hrn3MbWGud0yUPblTt0EjHD_9BBD-0R1IYFuZ6GB9nw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Orders",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      },
+      "name": "Save Order",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        950,
+        300
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "oTYKOsLDCXf4qSSD",
+          "name": "31Kitchens_Service_Account"
+        }
+      },
+      "id": "e44a40cd-b07b-44e0-842f-82b2098dccee"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1150,
+        300
+      ],
+      "id": "6a8ac3e3-9c26-4e95-af44-0bd2924fec93"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Settings": {
+      "main": [
+        [
+          {
+            "node": "Get Discounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Discounts": {
+      "main": [
+        [
+          {
+            "node": "Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logic": {
+      "main": [
+        [
+          {
+            "node": "Save Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Order": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "eefe6131-e507-46a5-a5e0-c4808cf61b39",
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-03-27T17:00:27.994Z",
+      "createdAt": "2026-03-27T17:00:27.994Z",
+      "role": "workflow:owner",
+      "workflowId": "XGts64QcSsq5v4hX",
+      "projectId": "V8XMrDtGG3369qrT"
+    }
+  ],
+  "tags": []
+}

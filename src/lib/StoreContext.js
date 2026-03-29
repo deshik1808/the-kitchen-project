@@ -22,40 +22,46 @@ export function StoreProvider({ children }) {
 
   useEffect(() => {
     async function initStore() {
-      let data = null;
+      // 1. Immediate Load from Cache (for speed)
+      let cachedData = null;
       try {
         const cached = sessionStorage.getItem('storeData');
-        if (cached) {
-          data = JSON.parse(cached);
+        const cacheTime = sessionStorage.getItem('storeDataTime');
+        const now = Date.now();
+        
+        if (cached && cacheTime && (now - parseInt(cacheTime) < 300000)) { // 5 min TTL
+          cachedData = JSON.parse(cached);
+          setStoreData(cachedData);
+          if (cachedData.branding) applyTheme(cachedData.branding);
+          setLoading(false);
         }
       } catch (e) {}
 
-      if (!data) {
-        data = await fetchMenu();
-        if (data) {
-          sessionStorage.setItem('storeData', JSON.stringify(data));
-        } else {
-          setError('Failed to load menu data.');
-        }
+      // 2. Always Fetch Fresh Data (to ensure Sheets edits reflect)
+      const freshData = await fetchMenu();
+      if (freshData) {
+        setStoreData(freshData);
+        sessionStorage.setItem('storeData', JSON.stringify(freshData));
+        sessionStorage.setItem('storeDataTime', Date.now().toString());
+        if (freshData.branding) applyTheme(freshData.branding);
+        if (freshData.store?.name) document.title = freshData.store.name;
+        setLoading(false);
+      } else if (!cachedData) {
+        setError('Failed to load menu data.');
+        setLoading(false);
       }
-
-      if (data) {
-        setStoreData(data);
-        if (data.branding) applyTheme(data.branding);
-        if (data.store?.name) document.title = data.store.name;
-      }
-      setLoading(false);
     }
 
     initStore();
 
-    // REAL-TIME SYNC (Option 3A): Silently refetch when user returns to tab
+    // REAL-TIME SYNC: Silently refetch when user returns to tab
     const silentRefetch = async () => {
       if (document.visibilityState === 'visible') {
         const freshData = await fetchMenu();
         if (freshData) {
           setStoreData(freshData);
           sessionStorage.setItem('storeData', JSON.stringify(freshData));
+          sessionStorage.setItem('storeDataTime', Date.now().toString());
           if (freshData.branding) applyTheme(freshData.branding);
         }
       }
