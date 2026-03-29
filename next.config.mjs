@@ -8,6 +8,10 @@ const nextConfig = {
     const n8nUrl = process.env.NEXT_PUBLIC_N8N_API_URL || 'https://n8n.srv1155211.hstgr.cloud/webhook';
     return [
       {
+        source: '/favicon.ico',
+        destination: '/api/favicon',
+      },
+      {
         source: '/api/n8n/:path*',
         destination: `${n8nUrl}/:path*`,
       },
