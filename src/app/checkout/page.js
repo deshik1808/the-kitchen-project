@@ -135,7 +135,7 @@ export default function CheckoutPage() {
       deliveryType: formData.deliveryType,
       address: formData.deliveryType === 'delivery' ? formData.address : '',
       notes: formData.notes,
-      paymentMethod: 'razorpay',
+      paymentMethod: 'razorpay', // default, user picks action on confirmation page
       subtotal: currentSubtotal,
       deliveryFee,
       total,
@@ -143,11 +143,23 @@ export default function CheckoutPage() {
 
     try {
       // Clear any stale previous order state
-      localStorage.removeItem('orderResult');
-      localStorage.removeItem('orderSubmitted');
-      localStorage.setItem('pendingOrderData', JSON.stringify(pendingOrderData));
-      localStorage.setItem('pendingWaUrl', waUrl);
-    } catch (e) {}
+      sessionStorage.removeItem('orderResult');
+      sessionStorage.removeItem('orderSubmitted');
+      sessionStorage.setItem('pendingOrderData', JSON.stringify(pendingOrderData));
+      sessionStorage.setItem('pendingWaUrl', waUrl);
+      
+      // Fire the order to the backend in parallel (non-blocking)
+      import('../../lib/api').then(api => {
+        api.placeOrder(pendingOrderData).then(result => {
+          if (result?.success) {
+            sessionStorage.setItem('orderResult', JSON.stringify(result));
+            sessionStorage.setItem('orderSubmitted', 'true');
+          }
+        });
+      });
+    } catch (e) {
+      console.error('Error storing pending order:', e);
+    }
 
     // Clear cart
     clearCart();

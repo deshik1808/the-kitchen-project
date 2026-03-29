@@ -121,14 +121,14 @@ function ConfirmationContent() {
 
     async function init() {
       try {
-        const storedPending = localStorage.getItem('pendingOrderData');
-        const storedWa = localStorage.getItem('pendingWaUrl');
-        const storedResult = localStorage.getItem('orderResult');
-        const alreadySubmitted = localStorage.getItem('orderSubmitted') === 'true';
+        const storedPending = sessionStorage.getItem('pendingOrderData');
+        const storedWa = sessionStorage.getItem('pendingWaUrl');
+        const storedResult = sessionStorage.getItem('orderResult');
+        const alreadySubmitted = sessionStorage.getItem('orderSubmitted') === 'true';
 
         if (storedWa) setWaUrl(storedWa);
 
-        // Case: page refreshed after successful submission
+        // Case: background order from checkout page already finished
         if (alreadySubmitted && storedResult) {
           const parsed = JSON.parse(storedResult);
           if (!cancelled) {
@@ -148,20 +148,54 @@ function ConfirmationContent() {
         const pending = JSON.parse(storedPending);
         if (!cancelled) setPendingOrder(pending);
 
-        // Fire order to n8n in background
-        const result = await placeOrder(pending);
+        // Case: background order is still in flight or hasn't started
+        // Start polling for the result in sessionStorage
+        let attempts = 0;
+        const maxAttempts = 30; // 15 seconds (2 per sec)
+        
+        const pollInterval = setInterval(() => {
+          if (cancelled) {
+            clearInterval(pollInterval);
+            return;
+          }
 
-        if (cancelled) return;
+          const resultStr = sessionStorage.getItem('orderResult');
+          if (resultStr) {
+            clearInterval(pollInterval);
+            const res = JSON.parse(resultStr);
+            setOrderResult(res);
+            setOrderState('success');
+            return;
+          }
 
-        if (result?.success) {
-          localStorage.setItem('orderResult', JSON.stringify(result));
-          localStorage.setItem('orderSubmitted', 'true');
-          setOrderResult(result);
-          setOrderState('success');
-        } else {
-          // n8n failed — but WA was already sent. Show graceful fallback.
-          setOrderState('failed');
+          attempts++;
+          
+          // After 2 seconds of polling (4 attempts), if still no result, fire it from here too
+          if (attempts === 4 && !sessionStorage.getItem('orderSubmitted')) {
+            console.log('Head-start order taking too long, firing fallback from confirmation...');
+            fireFallbackOrder(pending);
+          }
+
+          if (attempts >= maxAttempts) {
+            clearInterval(pollInterval);
+            if (orderState === 'loading') setOrderState('failed');
+          }
+        }, 500);
+
+        async function fireFallbackOrder(p) {
+          try {
+            const result = await placeOrder(p);
+            if (!cancelled && result?.success) {
+              sessionStorage.setItem('orderResult', JSON.stringify(result));
+              sessionStorage.setItem('orderSubmitted', 'true');
+              setOrderResult(result);
+              setOrderState('success');
+            }
+          } catch (e) {
+            console.error('Fallback order failed:', e);
+          }
         }
+
       } catch (err) {
         console.error('Confirmation init error:', err);
         if (!cancelled) setOrderState('failed');
@@ -191,8 +225,8 @@ function ConfirmationContent() {
     try {
       const result = await placeOrder(pendingOrder);
       if (result?.success) {
-        localStorage.setItem('orderResult', JSON.stringify(result));
-        localStorage.setItem('orderSubmitted', 'true');
+        sessionStorage.setItem('orderResult', JSON.stringify(result));
+        sessionStorage.setItem('orderSubmitted', 'true');
         setOrderResult(result);
         setOrderState('success');
         setRetryState('done');

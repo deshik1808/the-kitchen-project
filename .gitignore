@@ -45,3 +45,8 @@ tmp_workflows.json
 /dist
 /tmp
 *.bak
+
+# AI workspace state & config (contains live secrets — never commit)
+.gemini/
+.agents/mcp_config.json
+.agent/mcp_config.json
