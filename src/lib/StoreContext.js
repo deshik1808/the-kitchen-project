@@ -45,6 +45,7 @@ export function StoreProvider({ children }) {
         setStoreData(freshData);
         sessionStorage.setItem('storeData', JSON.stringify(freshData));
         sessionStorage.setItem('storeDataTime', Date.now().toString());
+        localStorage.setItem('storeData', JSON.stringify(freshData)); // fallback for inline head script
         if (freshData.branding) applyTheme(freshData.branding);
         if (freshData.store?.name) document.title = freshData.store.name;
         
@@ -66,18 +67,23 @@ export function StoreProvider({ children }) {
       try {
         const head = document.getElementsByTagName('head')[0];
         const existingIcons = document.querySelectorAll("link[rel*='icon']");
-        existingIcons.forEach(el => el.parentNode.removeChild(el));
 
-        const link = document.createElement('link');
-        link.type = 'image/x-icon';
-        link.rel = 'shortcut icon';
-        link.href = url;
-        head.appendChild(link);
+        if (existingIcons.length > 0) {
+          // Update href in-place — never remove, avoids the blank-favicon flash
+          existingIcons.forEach(el => { el.href = url; });
+        } else {
+          // First-time creation (no icons exist yet)
+          const link = document.createElement('link');
+          link.type = 'image/x-icon';
+          link.rel = 'shortcut icon';
+          link.href = url;
+          head.appendChild(link);
 
-        const link2 = document.createElement('link');
-        link2.rel = 'icon';
-        link2.href = url;
-        head.appendChild(link2);
+          const link2 = document.createElement('link');
+          link2.rel = 'icon';
+          link2.href = url;
+          head.appendChild(link2);
+        }
       } catch (e) {}
     }
 
@@ -89,6 +95,7 @@ export function StoreProvider({ children }) {
           setStoreData(freshData);
           sessionStorage.setItem('storeData', JSON.stringify(freshData));
           sessionStorage.setItem('storeDataTime', Date.now().toString());
+          localStorage.setItem('storeData', JSON.stringify(freshData)); // fallback for inline head script
           if (freshData.branding) applyTheme(freshData.branding);
           if (freshData.store?.faviconUrl) {
             updateFavicon(freshData.store.faviconUrl);

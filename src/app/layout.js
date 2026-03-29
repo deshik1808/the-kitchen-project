@@ -21,15 +21,17 @@ export default function RootLayout({ children }) {
             __html: `
               (function() {
                 try {
-                  const cached = sessionStorage.getItem('storeData');
-                  if (cached) {
-                    const data = JSON.parse(cached);
+                  // Try sessionStorage first, then localStorage as fallback
+                  const raw = sessionStorage.getItem('storeData') || localStorage.getItem('storeData');
+                  if (raw) {
+                    const data = JSON.parse(raw);
                     if (data.store) {
                       if (data.store.name) document.title = data.store.name;
                       if (data.store.faviconUrl) {
                         const url = data.store.faviconUrl;
                         const links = document.querySelectorAll("link[rel*='icon']");
-                        links.forEach(link => link.href = url);
+                        // Update in-place — never remove to avoid flash of no favicon
+                        links.forEach(link => { link.href = url; });
                       }
                     }
                   }
