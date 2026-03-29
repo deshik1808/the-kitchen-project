@@ -108,6 +108,7 @@ function ConfirmationContent() {
 
   // "I Sent It" button state
   const [waSentState, setWaSentState] = useState('idle'); // 'idle' | 'sending' | 'done'
+  const [retryState, setRetryState] = useState('idle'); // 'idle' | 'retrying' | 'done'
 
   const upiQrUrl = orderResult?.upiQrUrl || storeData?.store?.upiQrUrl || '';
   const razorpayLink = orderResult?.razorpayLink || '';
@@ -182,6 +183,26 @@ function ConfirmationContent() {
   const openWhatsApp = () => {
     if (waUrl) window.open(waUrl, '_blank');
   };
+
+  // Retry saving order to backend when n8n was unreachable
+  const handleRetry = useCallback(async () => {
+    if (retryState !== 'idle' || !pendingOrder) return;
+    setRetryState('retrying');
+    try {
+      const result = await placeOrder(pendingOrder);
+      if (result?.success) {
+        localStorage.setItem('orderResult', JSON.stringify(result));
+        localStorage.setItem('orderSubmitted', 'true');
+        setOrderResult(result);
+        setOrderState('success');
+        setRetryState('done');
+      } else {
+        setRetryState('idle'); // allow another retry
+      }
+    } catch {
+      setRetryState('idle');
+    }
+  }, [pendingOrder, retryState]);
 
   // ── EMPTY STATE ──
   if (orderState === 'empty') {
@@ -261,16 +282,35 @@ function ConfirmationContent() {
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h1>Order Sent! ✅</h1>
+          <h1>Message Sent ✅</h1>
           <p className="order-id">#{pendingOrder?.orderId}</p>
         </div>
 
         <div className="info-banner">
-          <p>Your order was sent via WhatsApp. The kitchen will confirm your order shortly.</p>
+          <p>Your WhatsApp message was sent! We're having a brief delay saving to our system.</p>
         </div>
 
-        {waUrl && (
-          <div className="actions">
+        <div className="actions">
+          {/* Retry save to backend */}
+          <button
+            onClick={handleRetry}
+            className="action-card confirm-wa-card"
+            disabled={retryState === 'retrying'}
+          >
+            {retryState === 'retrying' ? (
+              <><span className="btn-spinner" /> <span>Saving...</span></>
+            ) : (
+              <>
+                <div className="action-icon">🔄</div>
+                <div>
+                  <h3>Retry Save to Kitchen</h3>
+                  <p>Tap to re-send order details to our system</p>
+                </div>
+              </>
+            )}
+          </button>
+
+          {waUrl && (
             <button onClick={openWhatsApp} className="action-card wa-card">
               <div className="action-icon">💬</div>
               <div>
@@ -279,8 +319,8 @@ function ConfirmationContent() {
               </div>
               <span className="action-arrow">→</span>
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="footer-note">
           <Link href="/" className="back-link">← Back to Menu</Link>

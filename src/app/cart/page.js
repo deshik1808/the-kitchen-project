@@ -89,7 +89,7 @@ export default function CartPage() {
       <div className="summary-card">
         <OrderSummary
           subtotal={subtotal}
-          deliveryFee={0}
+          deliveryFee={Number(store.deliveryFee || 0)}
           currency={currency}
           itemCount={getCartItemCount()}
         />
