@@ -33,6 +33,7 @@ export function StoreProvider({ children }) {
           cachedData = JSON.parse(cached);
           setStoreData(cachedData);
           if (cachedData.branding) applyTheme(cachedData.branding);
+          if (cachedData.store?.name) document.title = cachedData.store.name;
           if (cachedData.store?.faviconUrl) updateFavicon(cachedData.store.faviconUrl);
           setLoading(false);
         }
