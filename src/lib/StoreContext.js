@@ -34,6 +34,7 @@ export function StoreProvider({ children }) {
           setStoreData(cachedData);
           if (cachedData.branding) applyTheme(cachedData.branding);
           if (cachedData.store?.name) document.title = cachedData.store.name;
+          if (cachedData.store?.faviconUrl) updateFavicon(cachedData.store.faviconUrl);
           setLoading(false);
         }
       } catch (e) {}
@@ -46,6 +47,11 @@ export function StoreProvider({ children }) {
         sessionStorage.setItem('storeDataTime', Date.now().toString());
         if (freshData.branding) applyTheme(freshData.branding);
         if (freshData.store?.name) document.title = freshData.store.name;
+        
+        if (freshData.store?.faviconUrl) {
+          updateFavicon(freshData.store.faviconUrl);
+        }
+
         setLoading(false);
       } else if (!cachedData) {
         setError('Failed to load menu data.');
@@ -54,6 +60,26 @@ export function StoreProvider({ children }) {
     }
 
     initStore();
+
+    function updateFavicon(url) {
+      if (!url) return;
+      try {
+        const head = document.getElementsByTagName('head')[0];
+        const existingIcons = document.querySelectorAll("link[rel*='icon']");
+        existingIcons.forEach(el => el.parentNode.removeChild(el));
+
+        const link = document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
+        link.href = url;
+        head.appendChild(link);
+
+        const link2 = document.createElement('link');
+        link2.rel = 'icon';
+        link2.href = url;
+        head.appendChild(link2);
+      } catch (e) {}
+    }
 
     // REAL-TIME SYNC: Silently refetch when user returns to tab
     const silentRefetch = async () => {
@@ -64,6 +90,9 @@ export function StoreProvider({ children }) {
           sessionStorage.setItem('storeData', JSON.stringify(freshData));
           sessionStorage.setItem('storeDataTime', Date.now().toString());
           if (freshData.branding) applyTheme(freshData.branding);
+          if (freshData.store?.faviconUrl) {
+            updateFavicon(freshData.store.faviconUrl);
+          }
         }
       }
     };
