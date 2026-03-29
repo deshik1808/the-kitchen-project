@@ -62,14 +62,31 @@ export function StoreProvider({ children }) {
     initStore();
 
     function updateFavicon(url) {
+      if (!url) return;
       try {
-        let link = document.querySelector("link[rel~='icon']");
-        if (!link) {
-          link = document.createElement('link');
-          link.rel = 'icon';
-          document.getElementsByTagName('head')[0].appendChild(link);
-        }
+        const head = document.getElementsByTagName('head')[0];
+        
+        // Remove ANY existing icons to prevent browser confusion
+        const existingIcons = document.querySelectorAll("link[rel*='icon']");
+        existingIcons.forEach(el => el.parentNode.removeChild(el));
+
+        // Create new clean icons
+        const link = document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
         link.href = url;
+        head.appendChild(link);
+
+        const link2 = document.createElement('link');
+        link2.rel = 'icon';
+        link2.type = 'image/png'; // generic
+        link2.href = url;
+        head.appendChild(link2);
+
+        const apple = document.createElement('link');
+        apple.rel = 'apple-touch-icon';
+        apple.href = url;
+        head.appendChild(apple);
       } catch (e) {
         console.error('Failed to update favicon:', e);
       }
