@@ -141,19 +141,24 @@ export default function CheckoutPage() {
       total,
     };
 
+    const POLLING_VERSION = 'v1';
     try {
       // Clear any stale previous order state
-      sessionStorage.removeItem('orderResult');
-      sessionStorage.removeItem('orderSubmitted');
-      sessionStorage.setItem('pendingOrderData', JSON.stringify(pendingOrderData));
-      sessionStorage.setItem('pendingWaUrl', waUrl);
+      sessionStorage.removeItem(`orderResult:${POLLING_VERSION}`);
+      sessionStorage.removeItem(`orderSubmitted:${POLLING_VERSION}`);
+      sessionStorage.setItem(`pendingOrderData:${POLLING_VERSION}`, JSON.stringify(pendingOrderData));
+      sessionStorage.setItem(`pendingWaUrl:${POLLING_VERSION}`, waUrl);
       
       // Fire the order to the backend in parallel (non-blocking)
       import('../../lib/api').then(api => {
         api.placeOrder(pendingOrderData).then(result => {
           if (result?.success) {
-            sessionStorage.setItem('orderResult', JSON.stringify(result));
-            sessionStorage.setItem('orderSubmitted', 'true');
+            try {
+              sessionStorage.setItem(`orderResult:${POLLING_VERSION}`, JSON.stringify(result));
+              sessionStorage.setItem(`orderSubmitted:${POLLING_VERSION}`, 'true');
+            } catch (e) {
+              console.error('Error saving order result to session:', e);
+            }
           }
         });
       });

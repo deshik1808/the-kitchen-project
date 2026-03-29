@@ -118,13 +118,19 @@ function ConfirmationContent() {
   // Fire placeOrder once on mount
   useEffect(() => {
     let cancelled = false;
+    const POLLING_VERSION = 'v1'; // Logic for future schema migrations
 
     async function init() {
       try {
-        const storedPending = sessionStorage.getItem('pendingOrderData');
-        const storedWa = sessionStorage.getItem('pendingWaUrl');
-        const storedResult = sessionStorage.getItem('orderResult');
-        const alreadySubmitted = sessionStorage.getItem('orderSubmitted') === 'true';
+        let storedPending, storedWa, storedResult, alreadySubmitted;
+        try {
+          storedPending = sessionStorage.getItem(`pendingOrderData:${POLLING_VERSION}`);
+          storedWa = sessionStorage.getItem(`pendingWaUrl:${POLLING_VERSION}`);
+          storedResult = sessionStorage.getItem(`orderResult:${POLLING_VERSION}`);
+          alreadySubmitted = sessionStorage.getItem(`orderSubmitted:${POLLING_VERSION}`) === 'true';
+        } catch (e) {
+          console.error('Session storage inaccessible:', e);
+        }
 
         if (storedWa) setWaUrl(storedWa);
 
@@ -152,6 +158,7 @@ function ConfirmationContent() {
         // Start polling for the result in sessionStorage
         let attempts = 0;
         const maxAttempts = 30; // 15 seconds (2 per sec)
+        let fallbackStarted = false;
         
         const pollInterval = setInterval(() => {
           if (cancelled) {
@@ -159,7 +166,11 @@ function ConfirmationContent() {
             return;
           }
 
-          const resultStr = sessionStorage.getItem('orderResult');
+          let resultStr = null;
+          try {
+            resultStr = sessionStorage.getItem(`orderResult:${POLLING_VERSION}`);
+          } catch (e) {}
+
           if (resultStr) {
             clearInterval(pollInterval);
             const res = JSON.parse(resultStr);
@@ -171,14 +182,23 @@ function ConfirmationContent() {
           attempts++;
           
           // After 2 seconds of polling (4 attempts), if still no result, fire it from here too
-          if (attempts === 4 && !sessionStorage.getItem('orderSubmitted')) {
-            console.log('Head-start order taking too long, firing fallback from confirmation...');
-            fireFallbackOrder(pending);
+          if (attempts === 4 && !fallbackStarted) {
+            try {
+              if (!sessionStorage.getItem(`orderSubmitted:${POLLING_VERSION}`)) {
+                console.log('Head-start order taking too long, firing fallback from confirmation...');
+                fallbackStarted = true;
+                fireFallbackOrder(pending);
+              }
+            } catch (e) {
+              // fallback if storage check fails
+              fallbackStarted = true;
+              fireFallbackOrder(pending);
+            }
           }
 
           if (attempts >= maxAttempts) {
             clearInterval(pollInterval);
-            if (orderState === 'loading') setOrderState('failed');
+            if (!cancelled && orderState === 'loading') setOrderState('failed');
           }
         }, 500);
 
@@ -186,8 +206,10 @@ function ConfirmationContent() {
           try {
             const result = await placeOrder(p);
             if (!cancelled && result?.success) {
-              sessionStorage.setItem('orderResult', JSON.stringify(result));
-              sessionStorage.setItem('orderSubmitted', 'true');
+              try {
+                sessionStorage.setItem(`orderResult:${POLLING_VERSION}`, JSON.stringify(result));
+                sessionStorage.setItem(`orderSubmitted:${POLLING_VERSION}`, 'true');
+              } catch (e) {}
               setOrderResult(result);
               setOrderState('success');
             }
@@ -204,7 +226,7 @@ function ConfirmationContent() {
 
     init();
     return () => { cancelled = true; };
-  }, []);
+  }, [orderState]);
 
   const handleSentWhatsApp = useCallback(async () => {
     if (waSentState !== 'idle' || !orderId) return;
