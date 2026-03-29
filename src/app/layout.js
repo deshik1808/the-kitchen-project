@@ -8,9 +8,14 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+  const defaultFavicon = "https://res.cloudinary.com/dgv3ycgxb/image/upload/v1774665125/Biryani_Logo_HD_page-0004_lrs3mp.jpg";
+
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href={defaultFavicon} />
+        <link rel="shortcut icon" href={defaultFavicon} />
+        <link rel="apple-touch-icon" href={defaultFavicon} />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -22,19 +27,9 @@ export default function RootLayout({ children }) {
                     if (data.store) {
                       if (data.store.name) document.title = data.store.name;
                       if (data.store.faviconUrl) {
-                        const head = document.getElementsByTagName('head')[0];
-                        const existing = document.querySelectorAll("link[rel*='icon']");
-                        existing.forEach(el => el.parentNode.removeChild(el));
-                        
-                        const link = document.createElement('link');
-                        link.rel = 'shortcut icon';
-                        link.href = data.store.faviconUrl;
-                        head.appendChild(link);
-                        
-                        const link2 = document.createElement('link');
-                        link2.rel = 'icon';
-                        link2.href = data.store.faviconUrl;
-                        head.appendChild(link2);
+                        const url = data.store.faviconUrl;
+                        const links = document.querySelectorAll("link[rel*='icon']");
+                        links.forEach(link => link.href = url);
                       }
                     }
                   }
