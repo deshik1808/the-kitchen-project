@@ -8,9 +8,9 @@
   "theme_color": "#FF5200",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "https://res.cloudinary.com/dgv3ycgxb/image/upload/v1774665125/Biryani_Logo_HD_page-0004_lrs3mp.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
     }
   ]
 }

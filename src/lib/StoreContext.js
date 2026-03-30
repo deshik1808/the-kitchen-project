@@ -31,10 +31,12 @@ export function StoreProvider({ children }) {
         
         if (cached && cacheTime && (now - parseInt(cacheTime) < 300000)) { // 5 min TTL
           cachedData = JSON.parse(cached);
+          const faviconUrl = cachedData.branding?.faviconUrl || cachedData.store?.faviconUrl;
+          
           setStoreData(cachedData);
           if (cachedData.branding) applyTheme(cachedData.branding);
           if (cachedData.store?.name) document.title = cachedData.store.name;
-          if (cachedData.store?.faviconUrl) updateFavicon(cachedData.store.faviconUrl);
+          if (faviconUrl) updateFavicon(faviconUrl);
           setLoading(false);
         }
       } catch (e) {}
@@ -45,12 +47,15 @@ export function StoreProvider({ children }) {
         setStoreData(freshData);
         sessionStorage.setItem('storeData', JSON.stringify(freshData));
         sessionStorage.setItem('storeDataTime', Date.now().toString());
-        localStorage.setItem('storeData', JSON.stringify(freshData)); // fallback for inline head script
+        localStorage.setItem('storeData', JSON.stringify(freshData)); 
+        
+        const faviconUrl = freshData.branding?.faviconUrl || freshData.store?.faviconUrl;
+        
         if (freshData.branding) applyTheme(freshData.branding);
         if (freshData.store?.name) document.title = freshData.store.name;
         
-        if (freshData.store?.faviconUrl) {
-          updateFavicon(freshData.store.faviconUrl);
+        if (faviconUrl) {
+          updateFavicon(faviconUrl);
         }
 
         setLoading(false);
@@ -65,25 +70,16 @@ export function StoreProvider({ children }) {
     function updateFavicon(url) {
       if (!url) return;
       try {
-        const head = document.getElementsByTagName('head')[0];
-        const existingIcons = document.querySelectorAll("link[rel*='icon']");
-
-        if (existingIcons.length > 0) {
-          // Update href in-place — never remove, avoids the blank-favicon flash
-          existingIcons.forEach(el => { el.href = url; });
-        } else {
-          // First-time creation (no icons exist yet)
-          const link = document.createElement('link');
-          link.type = 'image/x-icon';
-          link.rel = 'shortcut icon';
-          link.href = url;
-          head.appendChild(link);
-
-          const link2 = document.createElement('link');
-          link2.rel = 'icon';
-          link2.href = url;
-          head.appendChild(link2);
-        }
+        const ids = ['favicon-main', 'favicon-shortcut', 'favicon-apple'];
+        ids.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.href = url;
+        });
+        
+        // Also update any other icons
+        document.querySelectorAll("link[rel*='icon']").forEach(el => {
+          el.href = url;
+        });
       } catch (e) {}
     }
 
@@ -97,8 +93,9 @@ export function StoreProvider({ children }) {
           sessionStorage.setItem('storeDataTime', Date.now().toString());
           localStorage.setItem('storeData', JSON.stringify(freshData)); // fallback for inline head script
           if (freshData.branding) applyTheme(freshData.branding);
-          if (freshData.store?.faviconUrl) {
-            updateFavicon(freshData.store.faviconUrl);
+          const faviconUrl = freshData.branding?.faviconUrl || freshData.store?.faviconUrl;
+          if (faviconUrl) {
+            updateFavicon(faviconUrl);
           }
         }
       }

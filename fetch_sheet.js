@@ -42,7 +42,7 @@ async function run() {
   try {
     const accessToken = await getAuthToken();
     const spreadsheetId = '1Hrn3MbWGud0yUPblTt0EjHD_9BBD-0R1IYFuZ6GB9nw';
-    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Orders!A1:Z10`, {
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Settings!A1:B20`, {
       headers: { 'Authorization': 'Bearer ' + accessToken }
     });
     const data = await res.json();

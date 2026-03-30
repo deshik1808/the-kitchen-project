@@ -32,12 +32,16 @@ export function applyTheme(branding) {
   }
 
   if (branding.faviconUrl) {
-    let link = document.querySelector("link[rel~='icon']");
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'icon';
-      document.head.appendChild(link);
-    }
-    link.href = branding.faviconUrl;
+    const ids = ['favicon-main', 'favicon-shortcut', 'favicon-apple'];
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.href = branding.faviconUrl;
+    });
+    
+    // Also update any other link tags that mention icon in their rel
+    const allIcons = document.querySelectorAll("link[rel*='icon']");
+    allIcons.forEach(link => {
+      link.href = branding.faviconUrl;
+    });
   }
 }

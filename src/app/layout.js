@@ -13,26 +13,31 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href={defaultFavicon} />
-        <link rel="shortcut icon" href={defaultFavicon} />
-        <link rel="apple-touch-icon" href={defaultFavicon} />
+        <link id="favicon-main" rel="icon" href={defaultFavicon} />
+        <link id="favicon-shortcut" rel="shortcut icon" href={defaultFavicon} />
+        <link id="favicon-apple" rel="apple-touch-icon" href={defaultFavicon} />
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 try {
-                  // Try sessionStorage first, then localStorage as fallback
                   const raw = sessionStorage.getItem('storeData') || localStorage.getItem('storeData');
                   if (raw) {
                     const data = JSON.parse(raw);
-                    if (data.store) {
-                      if (data.store.name) document.title = data.store.name;
-                      if (data.store.faviconUrl) {
-                        const url = data.store.faviconUrl;
-                        const links = document.querySelectorAll("link[rel*='icon']");
-                        // Update in-place — never remove to avoid flash of no favicon
-                        links.forEach(link => { link.href = url; });
-                      }
+                    const faviconUrl = data.branding?.faviconUrl || data.store?.faviconUrl;
+                    const storeName = data.store?.name;
+                    
+                    if (storeName) document.title = storeName;
+                    if (faviconUrl) {
+                      const ids = ['favicon-main', 'favicon-shortcut', 'favicon-apple'];
+                      ids.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.href = faviconUrl;
+                      });
+                      // Also update any other icons just in case
+                      document.querySelectorAll("link[rel*='icon']").forEach(el => {
+                        el.href = faviconUrl;
+                      });
                     }
                   }
                 } catch (e) {}
