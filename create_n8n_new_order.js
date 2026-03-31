@@ -20,22 +20,30 @@ body.items.forEach(item => {
 
 let discountAmount = 0;
 let discountCode = (body.discountCode || "").trim().toUpperCase();
+let discountRowIndex = -1;
+const now = new Date();
+
 if (discountCode) {
-  const match = discounts.find(d => (d.json.Code || "").trim().toUpperCase() === discountCode);
-  if (match && match.json.Active === 'Y') {
-    const d = match.json;
-    if (subtotal >= Number(d['Min Order'] || 0)) {
-      discountAmount = (d.Type || "").toLowerCase() === 'percent' ? Math.round(subtotal * Number(d.Value) / 100) : Number(d.Value);
-      discountAmount = Math.min(discountAmount, Number(d['Max Discount'] || 99999), subtotal);
+  const matchIndex = discounts.findIndex(d => (d.json.Code || "").trim().toUpperCase() === discountCode);
+  if (matchIndex !== -1) {
+    const d = discounts[matchIndex].json;
+    const limit = Number(d['Usage Limit'] || 999999);
+    const used = Number(d['Used Count'] || 0);
+    const expiry = d.Expiry ? new Date(d.Expiry) : null;
+    
+    if (d.Active === 'Y' && used < limit && (!expiry || expiry > now)) {
+      if (subtotal >= Number(d['Min Order'] || 0)) {
+        discountAmount = (d.Type || "").toLowerCase() === 'percent' ? Math.round(subtotal * Number(d.Value) / 100) : Number(d.Value);
+        discountAmount = Math.min(discountAmount, Number(d['Max Discount'] || 99999), subtotal);
+        discountRowIndex = matchIndex + 2; // +2 for header and 1-indexing
+      }
     }
   }
 }
 
 const total = subtotal - discountAmount + (body.deliveryType === 'delivery' ? Number(storeSettings['Delivery Fee'] || 0) : 0);
-const now = new Date();
 const orderId = "ORD-" + ((now.getMonth()+1).toString().padStart(2,'0')) + (now.getDate().toString().padStart(2,'0')) + "-" + Math.floor(1000 + Math.random() * 9000);
 
-const adminPhone = storeSettings['Admin Phone'] || "";
 const storePhone = storeSettings['Store Phone'] || "919876543210";
 let itemText = body.items.map(i => "• " + i.name + " x " + i.qty).join("%0A");
 const waText = "🍽 *New Order: " + orderId + "*%0A%0A" +
@@ -51,6 +59,7 @@ const waText = "🍽 *New Order: " + orderId + "*%0A%0A" +
     (body.notes ? "%0A*Notes:* " + body.notes : "");
 const waLink = "https://wa.me/" + storePhone + "?text=" + waText;
 
+const adminPhone = storeSettings['Admin Phone'] || "";
 const callMeBotKey = storeSettings['CallMeBot API Key'] || "";
 let callMeBotUrl = "";
 if (adminPhone && callMeBotKey) {
@@ -67,8 +76,9 @@ return {
     orderId: orderId,
     total: total,
     waLink: waLink,
-    upiQrUrl: storeSettings['UPI QR Image URL'] || "",
     callMeBotUrl: callMeBotUrl,
+    discountRowIndex: discountRowIndex,
+    newUsedCount: discountRowIndex !== -1 ? (Number(discounts[discountRowIndex-2].json['Used Count'] || 0) + 1) : 0,
     // Sheet Data
     sheet_OrderId: orderId,
     sheet_Timestamp: now.toLocaleString(),
@@ -105,7 +115,7 @@ return {
         name: "Get Discounts", type: "n8n-nodes-base.googleSheets", typeVersion: 4, position: [450, 450], credentials: { googleApi: { id: credentialId } }
       },
       {
-        parameters: { jsCode: jsCode },
+        parameters: { language: "javaScript", jsCode: jsCode },
         name: "Logic", type: "n8n-nodes-base.code", typeVersion: 2, position: [650, 300]
       },
       {
@@ -136,15 +146,32 @@ return {
       },
       {
         parameters: { respondWith: "json", responseBody: "={\n  \"success\": true,\n  \"orderId\": \"{{ $node[\"Logic\"].json.orderId }}\",\n  \"waLink\": \"{{ $node[\"Logic\"].json.waLink }}\",\n  \"total\": {{ $node[\"Logic\"].json.total }}\n}", options: { responseHeaders: { entries: [{ name: "Access-Control-Allow-Origin", value: "*" }] } } },
-        name: "Response", type: "n8n-nodes-base.respondToWebhook", typeVersion: 1, position: [1050, 300]
+        name: "Response", type: "n8n-nodes-base.respondToWebhook", typeVersion: 1, position: [1100, 300]
+      },
+      {
+        parameters: { conditions: { number: [{ value1: "={{ $node[\"Logic\"].json.discountRowIndex }}", operation: "larger", value2: 1 }] } },
+        name: "If Discount Used", type: "n8n-nodes-base.if", typeVersion: 1, position: [1100, 500]
+      },
+      {
+        parameters: {
+          authentication: "serviceAccount", operation: "update", documentId: { __rl: true, value: spreadsheetId, mode: "id" }, sheetName: { __rl: true, value: "Discounts", mode: "name" },
+          rowNumber: "={{ $node[\"Logic\"].json.discountRowIndex }}",
+          columns: {
+            mappingMode: "defineBelow",
+            value: {
+              "Used Count": "={{ $node[\"Logic\"].json.newUsedCount }}"
+            }
+          }, options: {}
+        },
+        name: "Update Used Count", type: "n8n-nodes-base.googleSheets", typeVersion: 4, position: [1300, 500], credentials: { googleApi: { id: credentialId } }
       },
       {
         parameters: { conditions: { string: [{ value1: "={{ $node[\"Logic\"].json.callMeBotUrl }}", operation: "notEmpty" }] } },
-        name: "IF Bot Ready", type: "n8n-nodes-base.if", typeVersion: 1, position: [1050, 500]
+        name: "IF Bot Ready", type: "n8n-nodes-base.if", typeVersion: 1, position: [1100, 700]
       },
       {
         parameters: { method: "GET", url: "={{ $node[\"Logic\"].json.callMeBotUrl }}" },
-        name: "CallMeBot API", type: "n8n-nodes-base.httpRequest", typeVersion: 4, position: [1250, 500]
+        name: "CallMeBot API", type: "n8n-nodes-base.httpRequest", typeVersion: 4, position: [1300, 700]
       }
     ],
     connections: {
@@ -152,7 +179,8 @@ return {
       "Get Settings": { main: [[{ node: "Get Discounts", type: "main", index: 0 }]] },
       "Get Discounts": { main: [[{ node: "Logic", type: "main", index: 0 }]] },
       "Logic": { main: [[{ node: "Save Order", type: "main", index: 0 }]] },
-      "Save Order": { main: [[{ node: "Response", type: "main", index: 0 }, { node: "IF Bot Ready", type: "main", index: 0 }]] },
+      "Save Order": { main: [[{ node: "Response", type: "main", index: 0 }, { node: "If Discount Used", type: "main", index: 0 }, { node: "IF Bot Ready", type: "main", index: 0 }]] },
+      "If Discount Used": { main: [[{ node: "Update Used Count", type: "main", index: 0 }]] },
       "IF Bot Ready": { main: [[{ node: "CallMeBot API", type: "main", index: 0 }]] }
     }
   };

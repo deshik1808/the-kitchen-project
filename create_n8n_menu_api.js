@@ -8,6 +8,8 @@ async function createWorkflow() {
   const jsCode = `
 const settingsData = $items("Get Settings");
 const menuData = $items("Get Menu");
+const promoData = $items("Get Promotions");
+const discountData = $items("Get Discounts");
 
 const store = {};
 const branding = {};
@@ -45,7 +47,7 @@ settingsData.forEach(item => {
   if (label === 'Google Maps URL') branding.googleMapsUrl = value;
 });
 
-// Step 3: Parse Menu (Filtering out unavailable items)
+// Step 3: Parse Menu
 const menu = menuData
   .filter(item => item.json['Available'] === 'Y')
   .map(item => {
@@ -54,10 +56,8 @@ const menu = menuData
     try {
       const addonStr = row['Add-ons'] || '';
       if (addonStr.trim().startsWith('[') || addonStr.trim().startsWith('{')) {
-        // try JSON
         addons = JSON.parse(addonStr);
       } else if (addonStr.trim()) {
-        // try Simple Text: "Extra Cheese: 30, No Onions: 0"
         addons = addonStr.split(',').map(part => {
           const [name, price] = part.split(':');
           return {
@@ -66,12 +66,10 @@ const menu = menuData
           };
         }).filter(a => a.name);
       }
-    } catch (e) {
-      console.log("Error parsing addons for: " + row['Name'], e.message);
-    }
+    } catch (e) {}
     
     return {
-       id: Number(row['ID']),
+      id: Number(row['ID']),
       name: row['Name'],
       description: row['Description'],
       price: Number(row['Price']),
@@ -84,10 +82,42 @@ const menu = menuData
   })
   .sort((a, b) => a.sortOrder - b.sortOrder);
 
+// Step 4: Parse Promotions
+const promotions = promoData
+  .filter(item => item.json['Active'] === 'Y')
+  .map(item => ({
+    id: item.json['ID'],
+    title: item.json['Title'],
+    description: item.json['Description'],
+    imageUrl: item.json['Image URL'],
+    link: item.json['Link'],
+    sortOrder: Number(item.json['Sort Order']) || 99
+  }))
+  .sort((a, b) => a.sortOrder - b.sortOrder);
+
+// Step 5: Parse Visual Discounts (Show in Frontend = Y)
+const activeDiscounts = discountData
+  .filter(item => {
+    const row = item.json;
+    const isVisible = row['Show in Frontend'] === 'Y';
+    const isActive = row['Active'] === 'Y';
+    const limitReached = Number(row['Used Count'] || 0) >= Number(row['Usage Limit'] || 999999);
+    const expired = row['Expiry'] && new Date(row['Expiry']) < new Date();
+    return isVisible && isActive && !limitReached && !expired;
+  })
+  .map(item => ({
+    code: item.json['Code'],
+    type: item.json['Type'],
+    value: Number(item.json['Value']),
+    description: item.json['Description'] || \`\${item.json['Value']}\${item.json['Type'] === 'percent' ? '%' : ' OFF'}\`
+  }));
+
 return {
   store,
   branding,
-  menu
+  menu,
+  promotions,
+  discounts: activeDiscounts
 };
 `;
 
@@ -111,16 +141,8 @@ return {
       {
         parameters: {
           operation: "getAll",
-          documentId: {
-            __rl: true,
-            value: spreadsheetId,
-            mode: "id"
-          },
-          sheetName: {
-            __rl: true,
-            value: "Settings",
-            mode: "name"
-          },
+          documentId: { __rl: true, value: spreadsheetId, mode: "id" },
+          sheetName: { __rl: true, value: "Settings", mode: "name" },
           options: {}
         },
         name: "Get Settings",
@@ -131,16 +153,8 @@ return {
       {
         parameters: {
           operation: "getAll",
-          documentId: {
-            __rl: true,
-            value: spreadsheetId,
-            mode: "id"
-          },
-          sheetName: {
-            __rl: true,
-            value: "Menu",
-            mode: "name"
-          },
+          documentId: { __rl: true, value: spreadsheetId, mode: "id" },
+          sheetName: { __rl: true, value: "Menu", mode: "name" },
           options: {}
         },
         name: "Get Menu",
@@ -150,13 +164,37 @@ return {
       },
       {
         parameters: {
+          operation: "getAll",
+          documentId: { __rl: true, value: spreadsheetId, mode: "id" },
+          sheetName: { __rl: true, value: "Promotions", mode: "name" },
+          options: {}
+        },
+        name: "Get Promotions",
+        type: "n8n-nodes-base.googleSheets",
+        typeVersion: 4,
+        position: [500, 500]
+      },
+            {
+        parameters: {
+          operation: "getAll",
+          documentId: { __rl: true, value: spreadsheetId, mode: "id" },
+          sheetName: { __rl: true, value: "Discounts", mode: "name" },
+          options: {}
+        },
+        name: "Get Discounts",
+        type: "n8n-nodes-base.googleSheets",
+        typeVersion: 4,
+        position: [500, 100]
+      },
+      {
+        parameters: {
           language: "javaScript",
           jsCode: jsCode
         },
         name: "Code",
         type: "n8n-nodes-base.code",
         typeVersion: 2,
-        position: [700, 300]
+        position: [800, 300]
       },
       {
         parameters: {
@@ -167,54 +205,16 @@ return {
         name: "Respond to Webhook",
         type: "n8n-nodes-base.respondToWebhook",
         typeVersion: 1,
-        position: [900, 300]
+        position: [1000, 300]
       }
     ],
     connections: {
-      "Webhook": {
-        "main": [
-          [
-            {
-              "node": "Get Settings",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Get Settings": {
-        "main": [
-          [
-            {
-              "node": "Get Menu",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Get Menu": {
-        "main": [
-          [
-            {
-              "node": "Code",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Code": {
-        "main": [
-          [
-            {
-              "node": "Respond to Webhook",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      }
+      "Webhook": { "main": [[{ "node": "Get Settings", "type": "main", "index": 0 }]] },
+      "Get Settings": { "main": [[{ "node": "Get Menu", "type": "main", "index": 0 }]] },
+      "Get Menu": { "main": [[{ "node": "Get Promotions", "type": "main", "index": 0 }]] },
+      "Get Promotions": { "main": [[{ "node": "Get Discounts", "type": "main", "index": 0 }]] },
+      "Get Discounts": { "main": [[{ "node": "Code", "type": "main", "index": 0 }]] },
+      "Code": { "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]] }
     }
   };
 

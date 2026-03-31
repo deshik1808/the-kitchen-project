@@ -168,7 +168,7 @@ export default function Home() {
           padding-bottom: 80px;
         }
         .hero-section {
-          padding: var(--space-3) var(--space-6) 0;
+          padding: var(--space-3) 0 0;
         }
         .menu-content {
           padding: var(--space-3) var(--space-6);

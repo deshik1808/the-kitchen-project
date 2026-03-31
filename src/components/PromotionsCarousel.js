@@ -1,179 +1,185 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 export default function PromotionsCarousel({ promotions = [] }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const timeoutRef = useRef(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const stripRef = useRef(null);
+  const cardRefs = useRef([]);
+  const autoScrollRef = useRef(null);
+  const isPausedRef = useRef(false);
 
-  const slides = promotions.filter(p =>
-    (p.Active === 'Y' || p.active === 'Y') && p['Image URL']
-  );
+  const slides = promotions.filter(p => p.imageUrl);
+
+  // IntersectionObserver: update active dot as user swipes
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    const observers = [];
+    cardRefs.current.forEach((card, i) => {
+      if (!card) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setActiveIndex(i); },
+        { root: stripRef.current, threshold: 0.6 }
+      );
+      obs.observe(card);
+      observers.push(obs);
+    });
+    return () => observers.forEach(o => o.disconnect());
+  }, [slides.length]);
+
+  // Auto-scroll every 4s, paused on touch
+  const scrollToIndex = useCallback((index) => {
+    const card = cardRefs.current[index];
+    if (card && stripRef.current) {
+      stripRef.current.scrollTo({ left: card.offsetLeft - 16, behavior: 'smooth' });
+    }
+  }, []);
 
   useEffect(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (slides.length > 1) {
-      timeoutRef.current = setTimeout(() => {
-        setCurrentIndex(prev => (prev + 1) % slides.length);
-      }, 5000);
-    }
-    return () => clearTimeout(timeoutRef.current);
-  }, [currentIndex, slides.length]);
+    if (slides.length <= 1) return;
+    autoScrollRef.current = setInterval(() => {
+      if (!isPausedRef.current) {
+        setActiveIndex(prev => {
+          const next = (prev + 1) % slides.length;
+          scrollToIndex(next);
+          return next;
+        });
+      }
+    }, 4000);
+    return () => clearInterval(autoScrollRef.current);
+  }, [slides.length, scrollToIndex]);
+
+  const handleTouchStart = () => { isPausedRef.current = true; };
+  const handleTouchEnd = () => {
+    setTimeout(() => { isPausedRef.current = false; }, 3000);
+  };
 
   if (slides.length === 0) return null;
 
-  const prev = () => setCurrentIndex(i => (i === 0 ? slides.length - 1 : i - 1));
-  const next = () => setCurrentIndex(i => (i + 1) % slides.length);
-
   return (
-    <div className="carousel">
-      <div className="track" style={{ transform: `translateX(-${currentIndex * 100}%)` }}>
+    <div className="promo-wrap">
+      <div
+        className="strip"
+        ref={stripRef}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {slides.map((promo, i) => (
-          <div key={promo.ID || i} className="slide">
-            <img src={promo['Image URL']} alt={promo.Title || ''} className="slide-img" />
-            <div className="slide-overlay">
-              {promo.Title && <h2 className="slide-title">{promo.Title}</h2>}
-              {promo.Description && <p className="slide-desc">{promo.Description}</p>}
-              {promo.Link && (
-                <a href={promo.Link} target="_blank" rel="noopener noreferrer" className="slide-cta">
-                  Learn More
-                </a>
-              )}
-            </div>
+          <div
+            key={promo.id || i}
+            className="card"
+            ref={el => cardRefs.current[i] = el}
+          >
+            {promo.link ? (
+              <a href={promo.link} target="_blank" rel="noopener noreferrer" className="card-anchor">
+                <img src={promo.imageUrl} alt={promo.title || 'Promotion'} className="card-img" />
+              </a>
+            ) : (
+              <img src={promo.imageUrl} alt={promo.title || 'Promotion'} className="card-img" />
+            )}
+            {(promo.title || promo.description) && (
+              <div className="overlay">
+                {promo.title && <h2 className="overlay-title">{promo.title}</h2>}
+                {promo.description && <p className="overlay-desc">{promo.description}</p>}
+              </div>
+            )}
           </div>
         ))}
       </div>
 
       {slides.length > 1 && (
-        <>
-          <button className="nav-btn nav-prev" onClick={prev} aria-label="Previous">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-          </button>
-          <button className="nav-btn nav-next" onClick={next} aria-label="Next">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </button>
-          <div className="dots">
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                className={`dot ${i === currentIndex ? 'active' : ''}`}
-                onClick={() => setCurrentIndex(i)}
-                aria-label={`Slide ${i + 1}`}
-              />
-            ))}
-          </div>
-        </>
+        <div className="dots">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              className={`dot ${i === activeIndex ? 'active' : ''}`}
+              onClick={() => { scrollToIndex(i); setActiveIndex(i); }}
+              aria-label={`Go to slide ${i + 1}`}
+            />
+          ))}
+        </div>
       )}
 
       <style jsx>{`
-        .carousel {
-          position: relative;
+        .promo-wrap {
           width: 100%;
-          height: 200px;
-          overflow: hidden;
-          border-radius: var(--radius-xl);
-          background: var(--color-surface-container);
         }
-        .track {
+        .strip {
           display: flex;
-          height: 100%;
-          transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          scroll-behavior: smooth;
+          scrollbar-width: none;
+          -webkit-overflow-scrolling: touch;
         }
-        .slide {
+        .strip::-webkit-scrollbar { display: none; }
+        .card {
           flex-shrink: 0;
-          width: 100%;
-          height: 100%;
+          width: calc(100% - 32px);
+          margin: 0 16px;
+          scroll-snap-align: center;
+          border-radius: var(--radius-xl);
+          overflow: hidden;
           position: relative;
+          box-shadow: var(--shadow-card);
         }
-        .slide-img {
+        .card-anchor {
+          display: block;
           width: 100%;
-          height: 100%;
-          object-fit: cover;
         }
-        .slide-overlay {
+        .card-img {
+          width: 100%;
+          aspect-ratio: 16 / 7;
+          object-fit: cover;
+          display: block;
+        }
+        .overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.15) 60%, transparent 100%);
+          background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.08) 55%, transparent 100%);
           display: flex;
           flex-direction: column;
           justify-content: flex-end;
-          padding: var(--space-5) var(--space-5) var(--space-4);
+          padding: 12px 14px 10px;
+          pointer-events: none;
         }
-        .slide-title {
+        .overlay-title {
           color: #fff;
           font-family: var(--font-display);
-          font-size: 1.2rem;
+          font-size: 1rem;
           font-weight: 800;
-          margin-bottom: 4px;
-          text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+          margin: 0 0 3px;
+          text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+          line-height: 1.2;
         }
-        .slide-desc {
-          color: rgba(255,255,255,0.85);
-          font-size: 0.8rem;
-          font-family: var(--font-body);
-          margin-bottom: var(--space-2);
+        .overlay-desc {
+          color: rgba(255,255,255,0.88);
+          font-size: 0.72rem;
+          margin: 0;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
-        .slide-cta {
-          display: inline-block;
-          background: #fff;
-          color: var(--color-text);
-          font-family: var(--font-body);
-          font-size: 0.8rem;
-          font-weight: 700;
-          padding: 6px 18px;
-          border-radius: var(--radius-full);
-          text-decoration: none;
-          width: fit-content;
-        }
-        .nav-btn {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          background: rgba(255,255,255,0.2);
-          backdrop-filter: blur(8px);
-          border: none;
-          border-radius: var(--radius-full);
-          color: #fff;
-          width: 36px;
-          height: 36px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-        .nav-btn:hover { background: rgba(255,255,255,0.35); }
-        .nav-prev { left: var(--space-3); }
-        .nav-next { right: var(--space-3); }
         .dots {
-          position: absolute;
-          bottom: var(--space-2);
-          left: 50%;
-          transform: translateX(-50%);
           display: flex;
-          gap: 6px;
+          justify-content: center;
+          gap: 5px;
+          padding-top: 8px;
         }
         .dot {
-          width: 6px;
-          height: 6px;
+          width: 5px;
+          height: 5px;
           border-radius: var(--radius-full);
-          background: rgba(255,255,255,0.4);
+          background: var(--color-surface-dim);
           border: none;
           cursor: pointer;
           transition: all 0.3s;
           padding: 0;
         }
         .dot.active {
-          background: #fff;
-          width: 18px;
+          background: var(--color-primary);
+          width: 16px;
         }
       `}</style>
     </div>
