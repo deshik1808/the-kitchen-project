@@ -98,14 +98,14 @@ export default function MenuCard({ item, currency = '₹', onAdd }) {
           font-weight: 600;
           font-size: 0.8rem;
           cursor: pointer;
-          box-shadow: 0 4px 12px rgba(255, 82, 0, 0.35);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
           transition: all 0.2s;
           z-index: 2;
           letter-spacing: 0.02em;
         }
         .add-pill:hover {
           transform: translateY(-1px);
-          box-shadow: 0 6px 16px rgba(255, 82, 0, 0.45);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
         }
         .add-pill:active { transform: translateY(0); }
         

@@ -497,7 +497,7 @@ function ConfirmStyles() {
         background: linear-gradient(135deg, var(--color-primary-dim, #ff8a50), var(--color-primary));
         display: flex; align-items: center; justify-content: center;
         margin: 0 auto var(--space-4);
-        box-shadow: 0 8px 24px rgba(255, 82, 0, 0.3);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
         animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
       .loading-circle { animation: none; background: var(--color-surface-container-low); }

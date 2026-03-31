@@ -1,4 +1,11 @@
-export default function CategoryFilter({ categories, activeCategory, onSelect, vegOnly, onVegToggle, searchQuery, onSearch }) {
+"use client";
+
+import { useState } from 'react';
+import SearchDrawer from './SearchDrawer';
+
+export default function CategoryFilter({ categories, activeCategory, onSelect, vegOnly, onVegToggle, searchQuery, onSearch, menu }) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   return (
     <div className="filter-bar">
 
@@ -21,40 +28,50 @@ export default function CategoryFilter({ categories, activeCategory, onSelect, v
         ))}
       </div>
 
-      {/* Row 2: Search + Diet filters */}
+      {/* Row 2: Search trigger + Diet filters — all inline */}
       <div className="search-diet-row">
-        <div className="search-box">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => onSearch(e.target.value)}
-            placeholder="Search Menu"
-            className="search-input"
-          />
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="search-icon">
+        <button className="search-trigger" onClick={() => setDrawerOpen(true)}>
+          <span className="search-placeholder">
+            {searchQuery || 'Search Menu'}
+          </span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="search-icon">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-        </div>
+        </button>
 
-        <div className="diet-pills">
-          <button
-            className={`diet-pill veg-pill ${vegOnly === true ? 'active' : ''}`}
-            onClick={() => onVegToggle(true)}
-          >
-            <span className="veg-dot"></span>
-            Veg
-            {vegOnly === true && <span className="dismiss">✕</span>}
-          </button>
-          <button
-            className={`diet-pill nonveg-pill ${vegOnly === false ? 'active' : ''}`}
-            onClick={() => onVegToggle(false)}
-          >
-            <span className="non-veg-dot"></span>
-            Non-Veg
-            {vegOnly === false && <span className="dismiss">✕</span>}
-          </button>
-        </div>
+        <button
+          className={`diet-btn veg-btn ${vegOnly === true ? 'active' : ''}`}
+          onClick={() => onVegToggle(true)}
+        >
+          <span className="veg-dot"></span>
+          <span>Veg</span>
+          {vegOnly === true && (
+            <svg className="x-mark" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          )}
+        </button>
+
+        <button
+          className={`diet-btn nonveg-btn ${vegOnly === false ? 'active' : ''}`}
+          onClick={() => onVegToggle(false)}
+        >
+          <span className="non-veg-dot"></span>
+          <span>Non-Veg</span>
+          {vegOnly === false && (
+            <svg className="x-mark" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          )}
+        </button>
       </div>
+
+      <SearchDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onSearch={onSearch}
+        menu={menu}
+      />
 
       <style jsx>{`
         .filter-bar {
@@ -95,87 +112,93 @@ export default function CategoryFilter({ categories, activeCategory, onSelect, v
           box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary), transparent 60%);
         }
 
-        /* --- Search + Diet row --- */
+        /* --- Search + Diet row (all inline, no overflow) --- */
         .search-diet-row {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
+          width: 100%;
         }
-        .search-box {
+
+        /* Search trigger — rectangular, subtle gray border */
+        .search-trigger {
           flex: 1;
+          min-width: 0;
           display: flex;
           align-items: center;
-          background: var(--color-surface-container);
-          border-radius: var(--radius-full);
-          padding: 8px 14px;
+          justify-content: space-between;
           gap: 8px;
-          border: 1.5px solid transparent;
+          padding: 9px 12px;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--color-surface-dim);
+          background: var(--color-surface-lowest);
+          cursor: pointer;
           transition: border-color 0.2s;
         }
-        .search-box:focus-within {
-          border-color: var(--color-primary);
-          background: var(--color-surface-lowest);
+        .search-trigger:active {
+          border-color: var(--color-text-variant);
         }
-        .search-input {
-          flex: 1;
-          background: none;
-          border: none;
-          outline: none;
+        .search-placeholder {
           font-family: var(--font-body);
-          font-size: 0.85rem;
-          color: var(--color-text);
-          min-width: 0;
-        }
-        .search-input::placeholder { color: var(--color-text-variant); }
-        .search-icon { color: var(--color-text-variant); flex-shrink: 0; }
-
-        /* --- Diet pills --- */
-        .diet-pills {
-          display: flex;
-          gap: 6px;
-          flex-shrink: 0;
-        }
-        .diet-pill {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          padding: 6px 10px;
-          border-radius: var(--radius-full);
-          background: transparent;
-          font-family: var(--font-body);
-          font-size: 0.8rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s;
+          font-size: 0.82rem;
+          color: var(--color-text-variant);
+          overflow: hidden;
+          text-overflow: ellipsis;
           white-space: nowrap;
         }
-        .veg-pill {
-          border: 1.5px solid var(--color-secondary);
-          color: var(--color-secondary);
-        }
-        .veg-pill.active {
-          background: color-mix(in srgb, var(--color-secondary), transparent 88%);
-          font-weight: 600;
-        }
-        .nonveg-pill {
-          border: 1.5px solid var(--color-error);
-          color: var(--color-error);
-        }
-        .nonveg-pill.active {
-          background: color-mix(in srgb, var(--color-error), transparent 88%);
-          font-weight: 600;
-        }
-        .dismiss {
-          font-size: 0.65rem;
-          margin-left: 1px;
-          opacity: 0.75;
+        .search-icon { color: var(--color-text-variant); flex-shrink: 0; }
+
+        /* --- Diet filter buttons — rectangular with subtle radius --- */
+        .diet-btn {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          flex-shrink: 0;
+          padding: 8px 10px;
+          border-radius: var(--radius-sm);
+          font-family: var(--font-body);
+          font-size: 0.78rem;
+          font-weight: 500;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all 0.2s;
         }
 
-        /* --- Veg/Non-Veg icons --- */
+        .veg-btn {
+          border: 1.5px solid var(--color-surface-dim);
+          background: var(--color-surface-lowest);
+          color: var(--color-text-variant);
+        }
+        .veg-btn.active {
+          border-color: var(--color-secondary);
+          background: color-mix(in srgb, var(--color-secondary), transparent 92%);
+          color: var(--color-secondary);
+          font-weight: 600;
+        }
+
+        .nonveg-btn {
+          border: 1.5px solid var(--color-surface-dim);
+          background: var(--color-surface-lowest);
+          color: var(--color-text-variant);
+        }
+        .nonveg-btn.active {
+          border-color: var(--color-error);
+          background: color-mix(in srgb, var(--color-error), transparent 92%);
+          color: var(--color-error);
+          font-weight: 600;
+        }
+
+        .x-mark {
+          display: block;
+          flex-shrink: 0;
+          color: var(--color-text);
+        }
+
+        /* --- Veg/Non-Veg dot icons --- */
         .veg-dot {
           display: inline-block;
-          width: 13px; height: 13px;
-          border: 2px solid var(--color-secondary);
+          width: 12px; height: 12px;
+          border: 1.5px solid var(--color-secondary);
           border-radius: 2px;
           position: relative;
           flex-shrink: 0;
@@ -191,8 +214,8 @@ export default function CategoryFilter({ categories, activeCategory, onSelect, v
         }
         .non-veg-dot {
           display: inline-block;
-          width: 13px; height: 13px;
-          border: 2px solid var(--color-error);
+          width: 12px; height: 12px;
+          border: 1.5px solid var(--color-error);
           border-radius: 2px;
           position: relative;
           flex-shrink: 0;
@@ -203,9 +226,9 @@ export default function CategoryFilter({ categories, activeCategory, onSelect, v
           top: 50%; left: 50%;
           transform: translate(-50%, -50%);
           width: 0; height: 0;
-          border-left: 3.5px solid transparent;
-          border-right: 3.5px solid transparent;
-          border-bottom: 5px solid var(--color-error);
+          border-left: 3px solid transparent;
+          border-right: 3px solid transparent;
+          border-bottom: 4.5px solid var(--color-error);
         }
       `}</style>
     </div>

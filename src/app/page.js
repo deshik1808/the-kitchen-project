@@ -127,6 +127,7 @@ export default function Home() {
         onVegToggle={(val) => setVegOnly(vegOnly === val ? null : val)}
         searchQuery={searchQuery}
         onSearch={setSearchQuery}
+        menu={menu}
       />
 
       <div className="menu-content">

@@ -38,7 +38,7 @@ export default function CartPage() {
           .empty-icon { font-size: 3rem; display: block; margin-bottom: var(--space-3); }
           h2 { font-family: var(--font-display); margin-bottom: var(--space-2); }
           p { color: var(--color-text-variant); margin-bottom: var(--space-5); }
-          .browse-btn { display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, var(--color-primary-dim), var(--color-primary)); color: white; border-radius: var(--radius-full); font-weight: 700; font-family: var(--font-display); box-shadow: 0 4px 16px rgba(255,82,0,0.3); }
+          .browse-btn { display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, var(--color-primary-dim), var(--color-primary)); color: white; border-radius: var(--radius-full); font-weight: 700; font-family: var(--font-display); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
         `}</style>
       </div>
     );
@@ -163,7 +163,7 @@ export default function CartPage() {
           font-weight: 700;
           font-size: 1.05rem;
           margin-top: var(--space-4);
-          box-shadow: 0 4px 16px rgba(255, 82, 0, 0.3);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
           transition: transform 0.15s;
         }
         .checkout-btn:hover { transform: translateY(-1px); color: white; opacity: 1; }

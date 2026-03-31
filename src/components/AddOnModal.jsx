@@ -219,9 +219,9 @@ export default function AddOnModal({ item, currency = '₹', onClose, onConfirm 
           font-size: 1.05rem;
           cursor: pointer;
           transition: transform 0.15s, box-shadow 0.2s;
-          box-shadow: 0 4px 16px rgba(255, 82, 0, 0.3);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
         }
-        .confirm-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255, 82, 0, 0.4); }
+        .confirm-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); }
         .confirm-btn:active { transform: translateY(0); }
         
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
