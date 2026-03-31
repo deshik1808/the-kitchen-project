@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useStore } from '../lib/StoreContext';
 import { addToCart } from '../lib/cart';
 import CategoryFilter from '../components/CategoryFilter';
@@ -8,16 +8,40 @@ import MenuCard from '../components/MenuCard';
 import AddOnModal from '../components/AddOnModal';
 import StoreClosed from '../components/StoreClosed';
 import CartDrawer from '../components/CartDrawer';
+import FloatingSearch from '../components/FloatingSearch';
+import PromotionsCarousel from '../components/PromotionsCarousel';
+import CouponList from '../components/CouponList';
 
 export default function Home() {
   const { storeData, loading, error, showToast } = useStore();
   const [activeCategory, setActiveCategory] = useState('All');
   const [vegOnly, setVegOnly] = useState(null); // null = show all
   const [selectedItem, setSelectedItem] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const store = storeData?.store ?? {};
+  const menu = storeData?.menu ?? [];
+  const promotions = storeData?.promotions ?? [];
+  const discounts = storeData?.discounts ?? [];
+  const filteredMenu = useMemo(() => {
+    return menu.filter(item => {
+      if (activeCategory !== 'All' && item.category !== activeCategory) return false;
+      if (vegOnly === true && item.type?.toLowerCase() !== 'veg') return false;
+      if (vegOnly === false && item.type?.toLowerCase() !== 'non-veg') return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const nameMatch = item.name?.toLowerCase().includes(q);
+        const descMatch = item.description?.toLowerCase().includes(q);
+        if (!nameMatch && !descMatch) return false;
+      }
+      return true;
+    });
+  }, [menu, activeCategory, vegOnly, searchQuery]);
 
   if (loading) {
     return (
       <div className="loading-page">
+        <div className="skeleton-hero"></div>
         <div className="skeleton-grid">
           {[1,2,3,4].map(i => (
             <div key={i} className="skeleton-card">
@@ -29,6 +53,7 @@ export default function Home() {
         </div>
         <style jsx>{`
           .loading-page { max-width: 480px; margin: 0 auto; padding: var(--space-6); }
+          .skeleton-hero { height: 200px; background: var(--color-surface-container); border-radius: var(--radius-xl); margin-bottom: var(--space-6); animation: pulse 1.5s infinite; }
           .skeleton-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
           .skeleton-card { background: var(--color-surface-lowest); border-radius: var(--radius-lg); overflow: hidden; }
           .skel-img { height: 130px; background: var(--color-surface-container); animation: pulse 1.5s infinite; }
@@ -61,16 +86,8 @@ export default function Home() {
     );
   }
 
-  const { store, menu } = storeData;
   const currency = store.currency || '₹';
   const categories = Array.from(new Set(menu.map(item => item.category))).filter(Boolean);
-
-  const filteredMenu = menu.filter(item => {
-    if (activeCategory !== 'All' && item.category !== activeCategory) return false;
-    if (vegOnly === true && item.type?.toLowerCase() !== 'veg') return false;
-    if (vegOnly === false && item.type?.toLowerCase() !== 'non-veg') return false;
-    return true;
-  });
 
   const handleAdd = (item) => {
     if (store.open === false || store.open === 'N') {
@@ -80,7 +97,6 @@ export default function Home() {
     if (item.addons && item.addons.length > 0) {
       setSelectedItem(item);
     } else {
-      // No addons — add directly with qty 1
       addToCart({ ...item, qty: 1, addons: [] });
       showToast(`${item.name} added to cart!`, 'success');
     }
@@ -97,6 +113,14 @@ export default function Home() {
   return (
     <div className="menu-page">
       {!isStoreOpen && <StoreClosed message={store.closedMessage} />}
+      
+      <FloatingSearch onSearch={setSearchQuery} />
+
+      <div className="hero-section">
+        <PromotionsCarousel promotions={promotions} />
+      </div>
+
+      <CouponList discounts={discounts} />
 
       <CategoryFilter
         categories={categories}
@@ -120,7 +144,7 @@ export default function Home() {
           ) : (
             <div className="no-items">
               <span>🔍</span>
-              <p>No items match this filter.</p>
+              <p>No items match your search or filter.</p>
             </div>
           )}
         </div>
@@ -142,6 +166,9 @@ export default function Home() {
           max-width: 480px;
           margin: 0 auto;
           padding-bottom: 80px;
+        }
+        .hero-section {
+          padding: var(--space-3) var(--space-6) 0;
         }
         .menu-content {
           padding: var(--space-3) var(--space-6);

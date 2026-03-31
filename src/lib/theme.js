@@ -1,7 +1,21 @@
 export function applyTheme(branding) {
-  if (!branding || typeof window === 'undefined') return;
+  if (typeof window === 'undefined') return;
 
   const root = document.documentElement;
+
+  // Always force light-mode surface defaults as inline styles so Chrome's
+  // dark-mode forcing cannot override the CSS stylesheet values.
+  const bg = branding?.backgroundColor || '#f7f5ff';
+  const surf = branding?.surfaceColor || '#e4e7ff';
+  root.style.setProperty('--color-bg', bg);
+  root.style.setProperty('--color-surface', surf);
+  root.style.setProperty('--color-surface-lowest', '#ffffff');
+  root.style.setProperty('--color-surface-container', surf);
+  root.style.setProperty('--color-surface-container-high', `color-mix(in srgb, ${surf}, #000 8%)`);
+  root.style.setProperty('--color-surface-container-low', `color-mix(in srgb, ${surf}, #fff 30%)`);
+  root.style.setProperty('--color-surface-dim', `color-mix(in srgb, ${surf}, #000 15%)`);
+
+  if (!branding) return;
 
   if (branding.primaryColor) {
     root.style.setProperty('--color-primary', branding.primaryColor);
@@ -14,9 +28,10 @@ export function applyTheme(branding) {
   }
   
   if (branding.accentColor) root.style.setProperty('--color-accent', branding.accentColor);
-  if (branding.backgroundColor) root.style.setProperty('--color-bg', branding.backgroundColor);
-  if (branding.surfaceColor) root.style.setProperty('--color-surface', branding.surfaceColor);
-  if (branding.textColor) root.style.setProperty('--color-text', branding.textColor);
+  if (branding.textColor) {
+    root.style.setProperty('--color-text', branding.textColor);
+    root.style.setProperty('--color-text-variant', `color-mix(in srgb, ${branding.textColor}, transparent 40%)`);
+  }
 
   if (branding.font) {
     let link = document.getElementById('theme-font');
@@ -31,17 +46,8 @@ export function applyTheme(branding) {
     root.style.setProperty('--font-display', `"${branding.font}", sans-serif`);
   }
 
-  if (branding.faviconUrl) {
-    const ids = ['favicon-main', 'favicon-shortcut', 'favicon-apple'];
-    ids.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.href = branding.faviconUrl;
-    });
-    
-    // Also update any other link tags that mention icon in their rel
-    const allIcons = document.querySelectorAll("link[rel*='icon']");
-    allIcons.forEach(link => {
-      link.href = branding.faviconUrl;
-    });
-  }
+  const faviconUrl = branding.faviconUrl?.trim();
+  document.querySelectorAll("link[rel*='icon']").forEach(el => {
+    el.href = faviconUrl || '/favicon.ico';
+  });
 }

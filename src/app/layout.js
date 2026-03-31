@@ -8,14 +8,13 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  const defaultFavicon = "https://res.cloudinary.com/dgv3ycgxb/image/upload/v1774665125/Biryani_Logo_HD_page-0004_lrs3mp.jpg";
-
   return (
     <html lang="en">
       <head>
-        <link id="favicon-main" rel="icon" href={defaultFavicon} />
-        <link id="favicon-shortcut" rel="shortcut icon" href={defaultFavicon} />
-        <link id="favicon-apple" rel="apple-touch-icon" href={defaultFavicon} />
+        <meta name="color-scheme" content="light" />
+        <link id="favicon-main" rel="icon" href="/favicon.ico" />
+        <link id="favicon-shortcut" rel="shortcut icon" href="/favicon.ico" />
+        <link id="favicon-apple" rel="apple-touch-icon" href="/favicon.ico" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -26,15 +25,8 @@ export default function RootLayout({ children }) {
                     const data = JSON.parse(raw);
                     const faviconUrl = data.branding?.faviconUrl || data.store?.faviconUrl;
                     const storeName = data.store?.name;
-                    
                     if (storeName) document.title = storeName;
                     if (faviconUrl) {
-                      const ids = ['favicon-main', 'favicon-shortcut', 'favicon-apple'];
-                      ids.forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.href = faviconUrl;
-                      });
-                      // Also update any other icons just in case
                       document.querySelectorAll("link[rel*='icon']").forEach(el => {
                         el.href = faviconUrl;
                       });

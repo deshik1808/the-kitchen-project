@@ -21,6 +21,10 @@ export function StoreProvider({ children }) {
   };
 
   useEffect(() => {
+    // Apply CSS defaults as inline styles immediately on mount so Chrome's
+    // dark-mode forcing cannot override the stylesheet :root values.
+    applyTheme(null);
+
     async function initStore() {
       // 1. Immediate Load from Cache (for speed)
       let cachedData = null;
@@ -28,13 +32,13 @@ export function StoreProvider({ children }) {
         const cached = sessionStorage.getItem('storeData');
         const cacheTime = sessionStorage.getItem('storeDataTime');
         const now = Date.now();
-        
+
         if (cached && cacheTime && (now - parseInt(cacheTime) < 300000)) { // 5 min TTL
           cachedData = JSON.parse(cached);
           const faviconUrl = cachedData.branding?.faviconUrl || cachedData.store?.faviconUrl;
-          
+
           setStoreData(cachedData);
-          if (cachedData.branding) applyTheme(cachedData.branding);
+          applyTheme(cachedData.branding);
           if (cachedData.store?.name) document.title = cachedData.store.name;
           if (faviconUrl) updateFavicon(faviconUrl);
           setLoading(false);
@@ -47,11 +51,11 @@ export function StoreProvider({ children }) {
         setStoreData(freshData);
         sessionStorage.setItem('storeData', JSON.stringify(freshData));
         sessionStorage.setItem('storeDataTime', Date.now().toString());
-        localStorage.setItem('storeData', JSON.stringify(freshData)); 
-        
+        localStorage.setItem('storeData', JSON.stringify(freshData));
+
         const faviconUrl = freshData.branding?.faviconUrl || freshData.store?.faviconUrl;
-        
-        if (freshData.branding) applyTheme(freshData.branding);
+
+        applyTheme(freshData.branding);
         if (freshData.store?.name) document.title = freshData.store.name;
         
         if (faviconUrl) {
