@@ -8,7 +8,6 @@ import MenuCard from '../components/MenuCard';
 import AddOnModal from '../components/AddOnModal';
 import StoreClosed from '../components/StoreClosed';
 import CartDrawer from '../components/CartDrawer';
-import FloatingSearch from '../components/FloatingSearch';
 import PromotionsCarousel from '../components/PromotionsCarousel';
 import CouponList from '../components/CouponList';
 
@@ -114,8 +113,6 @@ export default function Home() {
     <div className="menu-page">
       {!isStoreOpen && <StoreClosed message={store.closedMessage} />}
       
-      <FloatingSearch onSearch={setSearchQuery} />
-
       <div className="hero-section">
         <PromotionsCarousel promotions={promotions} />
       </div>
@@ -128,6 +125,8 @@ export default function Home() {
         onSelect={setActiveCategory}
         vegOnly={vegOnly}
         onVegToggle={(val) => setVegOnly(vegOnly === val ? null : val)}
+        searchQuery={searchQuery}
+        onSearch={setSearchQuery}
       />
 
       <div className="menu-content">
