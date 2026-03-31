@@ -1,10 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
-export default function SearchDrawer({ open, onClose, onSearch, menu = [] }) {
+export default function SearchDrawer({ open, onClose, onSearch, onAdd, currency = '₹', menu = [] }) {
   const [query, setQuery] = useState('');
+  const [mounted, setMounted] = useState(false);
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -37,9 +43,9 @@ export default function SearchDrawer({ open, onClose, onSearch, menu = [] }) {
     onClose();
   };
 
-  if (!open) return null;
+  if (!mounted || !open) return null;
 
-  return (
+  return createPortal(
     <div className="drawer-overlay" onClick={onClose}>
       <div className="drawer" onClick={e => e.stopPropagation()}>
         <div className="drawer-handle" />
@@ -69,17 +75,35 @@ export default function SearchDrawer({ open, onClose, onSearch, menu = [] }) {
           {query.length >= 1 ? (
             suggestions.length > 0 ? (
               <div className="results">
-                {suggestions.map(item => (
-                  <button key={item.id} className="result-row" onClick={() => handleSelect(item.name)}>
-                    <div className="result-info">
-                      <span className={`type-dot ${item.type?.toLowerCase() === 'veg' ? 'veg' : 'nonveg'}`} />
-                      <span className="result-name">{item.name}</span>
+                {suggestions.map(item => {
+                  const isVeg = item.type?.toLowerCase() === 'veg';
+                  return (
+                    <div key={item.id} className="result-card" onClick={() => handleSelect(item.name)}>
+                      <div className="card-left">
+                        <span className={`type-dot ${isVeg ? 'veg' : 'nonveg'}`} />
+                        <p className="card-name">{item.name}</p>
+                        {item.description && (
+                          <p className="card-desc">{item.description}</p>
+                        )}
+                        <p className="card-price">{currency}{item.price}</p>
+                      </div>
+                      <div className="card-right">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.name} className="card-img" />
+                        ) : (
+                          <div className="card-img-placeholder">🍽</div>
+                        )}
+                        <button
+                          className="card-add"
+                          onClick={e => { e.stopPropagation(); onClose(); onAdd(item); }}
+                          aria-label={`Add ${item.name}`}
+                        >
+                          Add +
+                        </button>
+                      </div>
                     </div>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="arrow">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="empty">
@@ -105,8 +129,8 @@ export default function SearchDrawer({ open, onClose, onSearch, menu = [] }) {
         .drawer-overlay {
           position: fixed;
           inset: 0;
-          z-index: 200;
-          background: rgba(0,0,0,0.4);
+          z-index: 1100;
+          background: none;
           display: flex;
           flex-direction: column;
           justify-content: flex-end;
@@ -115,8 +139,8 @@ export default function SearchDrawer({ open, onClose, onSearch, menu = [] }) {
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .drawer {
           background: var(--color-surface-lowest);
-          border-radius: 20px 20px 0 0;
-          max-height: 75vh;
+          border-radius: 0;
+          height: 100dvh;
           display: flex;
           flex-direction: column;
           animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -141,7 +165,6 @@ export default function SearchDrawer({ open, onClose, onSearch, menu = [] }) {
           border-radius: var(--radius-md);
         }
         .drawer-search:focus-within {
-          border-color: var(--color-primary);
         }
         .s-icon { color: var(--color-text-variant); flex-shrink: 0; }
         .drawer-input {
@@ -171,31 +194,32 @@ export default function SearchDrawer({ open, onClose, onSearch, menu = [] }) {
         .results {
           display: flex;
           flex-direction: column;
+          gap: 0;
         }
-        .result-row {
+        .result-card {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 12px 4px;
-          border: none;
-          background: none;
-          cursor: pointer;
+          gap: 12px;
+          padding: 14px 0;
           border-bottom: 1px solid var(--color-surface-container);
-          width: 100%;
-          text-align: left;
+          cursor: pointer;
         }
-        .result-row:last-child { border-bottom: none; }
-        .result-info {
+        .result-card:last-child { border-bottom: none; }
+        .card-left {
+          flex: 1;
+          min-width: 0;
           display: flex;
-          align-items: center;
-          gap: 10px;
+          flex-direction: column;
+          gap: 4px;
         }
         .type-dot {
-          width: 12px; height: 12px;
-          border-radius: 2px;
+          width: 14px; height: 14px;
+          border-radius: 3px;
           border: 2px solid;
           position: relative;
           flex-shrink: 0;
+          margin-bottom: 2px;
         }
         .type-dot.veg { border-color: var(--color-secondary); }
         .type-dot.veg::after {
@@ -216,12 +240,69 @@ export default function SearchDrawer({ open, onClose, onSearch, menu = [] }) {
           border-right: 3px solid transparent;
           border-bottom: 5px solid var(--color-error);
         }
-        .result-name {
+        .card-name {
           font-family: var(--font-body);
-          font-size: 0.9rem;
+          font-size: 0.92rem;
+          font-weight: 400;
+          color: var(--color-text);
+          line-height: 1.3;
+        }
+        .card-desc {
+          font-family: var(--font-body);
+          font-size: 0.78rem;
+          color: var(--color-text-variant);
+          line-height: 1.4;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .card-price {
+          font-family: var(--font-body);
+          font-size: 0.88rem;
+          font-weight: 600;
           color: var(--color-text);
         }
-        .arrow { color: var(--color-text-variant); }
+        .card-right {
+          flex-shrink: 0;
+          position: relative;
+          width: 90px;
+        }
+        .card-img {
+          width: 90px;
+          height: 90px;
+          object-fit: cover;
+          border-radius: var(--radius-md);
+          display: block;
+        }
+        .card-img-placeholder {
+          width: 90px;
+          height: 90px;
+          border-radius: var(--radius-md);
+          background: var(--color-surface-container);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.8rem;
+        }
+        .card-add {
+          position: absolute;
+          bottom: -10px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: var(--color-surface-lowest);
+          color: var(--color-primary);
+          border: 1px solid var(--color-primary);
+          padding: 5px 18px;
+          border-radius: var(--radius-sm);
+          font-family: var(--font-body);
+          font-size: 0.75rem;
+          font-weight: 400;
+          cursor: pointer;
+          white-space: nowrap;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .card-add:active { background: var(--color-primary-light); }
         .empty {
           text-align: center;
           padding: var(--space-6) 0;
@@ -255,6 +336,7 @@ export default function SearchDrawer({ open, onClose, onSearch, menu = [] }) {
         }
         .chip:active { background: var(--color-surface-container-high); }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 }

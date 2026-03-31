@@ -70,27 +70,27 @@ export default function CartDrawer({ currency = '₹' }) {
         }
         .item-count {
           font-family: var(--font-display);
-          font-weight: 700;
+          font-weight: 500;
           font-size: 0.75rem;
           letter-spacing: 0.05em;
         }
         .pipe { opacity: 0.5; }
         .total-price {
           font-family: var(--font-display);
-          font-weight: 800;
+          font-weight: 600;
           font-size: 1.15rem;
         }
         .plus-tax {
           font-size: 0.7rem;
           opacity: 0.7;
-          font-weight: 300;
+          font-weight: 400;
         }
         .drawer-right {
           display: flex;
           align-items: center;
           gap: 4px;
           font-family: var(--font-display);
-          font-weight: 700;
+          font-weight: 500;
           font-size: 0.85rem;
           letter-spacing: 0.03em;
         }

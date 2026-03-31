@@ -63,7 +63,7 @@ export default function AddOnModal({ item, currency = '₹', onClose, onConfirm 
           </div>
         </div>
 
-        <button className="confirm-btn gradient-primary" onClick={() => onConfirm({ ...item, qty, addons: selectedAddons })}>
+        <button className="confirm-btn" onClick={() => onConfirm({ ...item, qty, addons: selectedAddons })}>
           Add to Cart — {currency}{totalPrice}
         </button>
       </div>
@@ -103,6 +103,7 @@ export default function AddOnModal({ item, currency = '₹', onClose, onConfirm 
         }
         .modal-head h3 {
           font-size: 1.3rem;
+          font-weight: 400;
           margin-bottom: 2px;
         }
         .base-price {
@@ -126,6 +127,7 @@ export default function AddOnModal({ item, currency = '₹', onClose, onConfirm 
         .addons-section h4 {
           font-family: var(--font-display);
           font-size: 1rem;
+          font-weight: 500;
           margin-bottom: var(--space-3);
           color: var(--color-text);
         }
@@ -165,11 +167,11 @@ export default function AddOnModal({ item, currency = '₹', onClose, onConfirm 
           content: '✓';
           color: white;
           font-size: 0.7rem;
-          font-weight: bold;
+          font-weight: 600;
         }
-        .addon-name { flex: 1; font-weight: 500; font-size: 0.9rem; }
-        .addon-price { font-weight: 500; font-size: 0.85rem; color: var(--color-text-variant); }
-        .addon-price.free { color: var(--color-secondary); font-weight: 600; }
+        .addon-name { flex: 1; font-weight: 400; font-size: 0.9rem; }
+        .addon-price { font-weight: 400; font-size: 0.85rem; color: var(--color-text-variant); }
+        .addon-price.free { color: var(--color-secondary); font-weight: 500; }
         
         .qty-section {
           display: flex;
@@ -178,22 +180,23 @@ export default function AddOnModal({ item, currency = '₹', onClose, onConfirm 
           margin: var(--space-5) 0;
           padding: var(--space-3) 0;
         }
-        .qty-label { font-weight: 600; font-size: 1rem; }
+        .qty-label { font-weight: 500; font-size: 1rem; }
         .qty-stepper {
           display: flex;
           align-items: center;
           gap: 0;
-          background: var(--color-surface-container-low);
-          border-radius: var(--radius-full);
+          border: 1px solid var(--color-surface-dim);
+          border-radius: var(--radius-sm);
           overflow: hidden;
+          background: var(--color-surface-lowest);
         }
         .qty-btn {
-          width: 40px; height: 40px;
+          width: 36px; height: 36px;
           background: transparent;
           border: none;
-          font-size: 1.25rem;
+          font-size: 1.15rem;
           color: var(--color-primary);
-          font-weight: 600;
+          font-weight: 400;
           cursor: pointer;
           transition: background 0.2s;
         }
@@ -202,7 +205,7 @@ export default function AddOnModal({ item, currency = '₹', onClose, onConfirm 
         .qty-btn.plus { color: var(--color-primary); }
         .qty-value {
           font-family: var(--font-display);
-          font-weight: 700;
+          font-weight: 600;
           font-size: 1.05rem;
           min-width: 28px;
           text-align: center;
@@ -213,16 +216,15 @@ export default function AddOnModal({ item, currency = '₹', onClose, onConfirm 
           padding: 16px;
           border: none;
           border-radius: var(--radius-lg);
+          background: var(--color-primary);
           color: white;
           font-family: var(--font-display);
-          font-weight: 700;
+          font-weight: 500;
           font-size: 1.05rem;
           cursor: pointer;
-          transition: transform 0.15s, box-shadow 0.2s;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+          transition: opacity 0.15s;
         }
-        .confirm-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); }
-        .confirm-btn:active { transform: translateY(0); }
+        .confirm-btn:active { opacity: 0.85; }
         
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }

@@ -107,7 +107,7 @@ export default function Header() {
         .logo-icon { font-size: 1.5rem; }
         .logo-name {
           font-family: var(--font-display);
-          font-weight: 700;
+          font-weight: 600;
           font-size: 1.2rem;
           color: #ffffff;
           letter-spacing: 0.02em;
@@ -150,7 +150,7 @@ export default function Header() {
           background: #ffffff;
           color: var(--color-primary);
           font-size: 0.62rem;
-          font-weight: 800;
+          font-weight: 700;
           border-radius: var(--radius-full);
           min-width: 18px;
           height: 18px;

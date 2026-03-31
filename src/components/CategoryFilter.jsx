@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import SearchDrawer from './SearchDrawer';
 
-export default function CategoryFilter({ categories, activeCategory, onSelect, vegOnly, onVegToggle, searchQuery, onSearch, menu }) {
+export default function CategoryFilter({ categories, activeCategory, onSelect, vegOnly, onVegToggle, searchQuery, onSearch, onAdd, currency, menu }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
@@ -34,9 +34,22 @@ export default function CategoryFilter({ categories, activeCategory, onSelect, v
           <span className="search-placeholder">
             {searchQuery || 'Search Menu'}
           </span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="search-icon">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
+          {searchQuery ? (
+            <span
+              role="button"
+              aria-label="Clear search"
+              className="search-clear-btn"
+              onClick={e => { e.stopPropagation(); onSearch(''); }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </span>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="search-icon">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          )}
         </button>
 
         <button
@@ -70,16 +83,18 @@ export default function CategoryFilter({ categories, activeCategory, onSelect, v
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         onSearch={onSearch}
+        onAdd={onAdd}
+        currency={currency}
         menu={menu}
       />
 
       <style jsx>{`
         .filter-bar {
-          position: sticky;
-          top: 60px;
-          z-index: 90;
           background: var(--color-surface-lowest);
-          padding: var(--space-2) var(--space-3) var(--space-3);
+          padding: var(--space-2) var(--space-3);
+          position: relative;
+          z-index: 20;
+          border-radius: inherit;
         }
 
         /* --- Category pills --- */
@@ -147,6 +162,15 @@ export default function CategoryFilter({ categories, activeCategory, onSelect, v
           white-space: nowrap;
         }
         .search-icon { color: var(--color-text-variant); flex-shrink: 0; }
+        .search-clear-btn {
+          display: flex;
+          align-items: center;
+          flex-shrink: 0;
+          color: var(--color-text-variant);
+          padding: 2px;
+          border-radius: 50%;
+        }
+        .search-clear-btn:active { color: var(--color-text); }
 
         /* --- Diet filter buttons — rectangular with subtle radius --- */
         .diet-btn {
