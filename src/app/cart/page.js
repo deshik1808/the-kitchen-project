@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, Fragment } from 'react';
-import { getCart, removeFromCart, updateQuantity, getCartSubtotal, getCartItemCount } from '../../lib/cart';
+import { useEffect, useState, useRef, Fragment } from 'react';
+import { getCart, updateQuantity, getCartSubtotal, getCartItemCount } from '../../lib/cart';
+import { validateDiscount } from '../../lib/api';
 import { useStore } from '../../lib/StoreContext';
 import OrderSummary from '../../components/OrderSummary';
 import Link from 'next/link';
@@ -15,9 +16,44 @@ export default function CartPage() {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [showAddressSheet, setShowAddressSheet] = useState(false);
   const [addrForm, setAddrForm] = useState({ type: 'Home', name: '', phone: '', house: '', landmark: '', city: 'Tirupati' });
+  const [instructions, setInstructions] = useState('');
+  const [instructionsFocused, setInstructionsFocused] = useState(false);
+  const instructionsRef = useRef(null);
+  const [showPromoSheet, setShowPromoSheet] = useState(false);
+  const [promoInput, setPromoInput] = useState('');
+  const [promoStatus, setPromoStatus] = useState(null); // null | 'loading' | 'success' | 'error'
+  const [promoError, setPromoError] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState(null); // {code, discount}
 
   const openAddressSheet = () => {
     setShowAddressSheet(true);
+  };
+
+  const applyPromo = async () => {
+    if (!promoInput.trim()) return;
+    setPromoStatus('loading');
+    setPromoError('');
+    try {
+      const result = await validateDiscount(promoInput.trim().toUpperCase(), subtotal);
+      if (result?.valid) {
+        setAppliedPromo({ code: promoInput.trim().toUpperCase(), discount: result.discount });
+        setPromoStatus('success');
+        setTimeout(() => setShowPromoSheet(false), 800);
+      } else {
+        setPromoStatus('error');
+        setPromoError(result?.message || 'Invalid promo code');
+      }
+    } catch {
+      setPromoStatus('error');
+      setPromoError('Could not apply code. Try again.');
+    }
+  };
+
+  const removePromo = () => {
+    setAppliedPromo(null);
+    setPromoInput('');
+    setPromoStatus(null);
+    setPromoError('');
   };
 
   const phoneValid = addrForm.phone.length === 10;
@@ -129,7 +165,12 @@ export default function CartPage() {
             {deliveryAddress ? (
               <>
                 <p className="pickup-label">Delivery Address:</p>
-                <p className="delivery-saved-address">{deliveryAddress}</p>
+                <div className="pickup-address-wrap">
+                  <div className="pickup-address-track">
+                    <span>{deliveryAddress}</span>
+                    <span>{deliveryAddress}</span>
+                  </div>
+                </div>
               </>
             ) : (
               <p className="delivery-placeholder">Add delivery address</p>
@@ -259,21 +300,26 @@ export default function CartPage() {
       <div className="cart-items">
         {cartItems.map((item) => {
           const addonsTotal = (item.addons || []).reduce((sum, a) => sum + (a.price || 0), 0);
+          const isNonVeg = item.type?.toLowerCase() === 'non-veg';
           return (
             <div key={item.cartItemId} className="cart-item">
-              <div className="item-img">
-                {item.imageUrl ? <img src={item.imageUrl} alt={item.name} /> : <span className="img-placeholder">🍽</span>}
+              <div className="veg-icon" title={isNonVeg ? 'Non-Veg' : 'Veg'}>
+                <svg width="16" height="16" viewBox="0 0 16 16">
+                  <rect x="1" y="1" width="14" height="14" rx="2" fill="none" stroke={isNonVeg ? '#c0392b' : '#27ae60'} strokeWidth="1.5"/>
+                  {isNonVeg
+                    ? <polygon points="8,3 13,13 3,13" fill="#c0392b"/>
+                    : <circle cx="8" cy="8" r="4" fill="#27ae60"/>}
+                </svg>
               </div>
               <div className="item-details">
                 <div className="item-top-row">
                   <div>
                     <h3>{item.name}</h3>
-                    {item.addons?.length > 0 && <p className="addons-label">{item.addons.map(a => a.name).join(', ')}</p>}
+                    {item.addons?.length > 0 && <p className="addons-label">Customizations ▾ &nbsp;{item.addons.map(a => a.name).join(', ')}</p>}
                   </div>
-                  <button className="remove-x" onClick={() => removeFromCart(item.cartItemId)}>✕</button>
                 </div>
                 <div className="item-bottom-row">
-                  <span className="item-price">{currency}{(item.price + addonsTotal).toFixed(2)}</span>
+                  <span className="item-price">{currency} {((item.price + addonsTotal) * item.qty).toFixed(0)}</span>
                   <div className="qty-stepper">
                     <button className="qty-btn" onClick={() => updateQuantity(item.cartItemId, -1)}>−</button>
                     <span className="qty-val">{item.qty}</span>
@@ -284,6 +330,39 @@ export default function CartPage() {
             </div>
           );
         })}
+        <div className="instructions-row">
+          <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-variant)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></svg>
+          <textarea
+            ref={instructionsRef}
+            className="instructions-input"
+            placeholder="Mention your special instructions here..."
+            value={instructions}
+            rows={1}
+            onChange={e => {
+              setInstructions(e.target.value);
+              const ta = e.target;
+              ta.style.height = 'auto';
+              ta.style.height = ta.scrollHeight + 'px';
+            }}
+            onFocus={() => setInstructionsFocused(true)}
+            onBlur={() => setTimeout(() => setInstructionsFocused(false), 150)}
+          />
+        </div>
+        {instructionsFocused && (
+          <div className="instructions-footer">
+            <span className="instructions-hint">The kitchen will try its best to follow your requests.</span>
+            {instructions.trim() && (
+              <button
+                className="instructions-save-btn"
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => {
+                  setInstructionsFocused(false);
+                  instructionsRef.current?.blur();
+                }}
+              >Save</button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="summary-card">
@@ -292,8 +371,68 @@ export default function CartPage() {
           deliveryFee={Number(store.deliveryFee || 0)}
           currency={currency}
           itemCount={getCartItemCount()}
+          discount={appliedPromo?.discount || 0}
         />
       </div>
+
+      <button className="promo-card" onClick={() => { setShowPromoSheet(true); setPromoStatus(null); setPromoError(''); }}>
+        <div className="promo-icon-wrap">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 3 L20 3 Q21 3 21 4 L21 10 A2 2 0 0 0 21 14 L21 20 Q21 21 20 21 L4 21 Q3 21 3 20 L3 14 A2 2 0 0 0 3 10 L3 4 Q3 3 4 3 Z"/>
+            <line x1="9" y1="15" x2="15" y2="9" strokeWidth="1.6"/>
+            <circle cx="9.5" cy="9.5" r="1.15" fill="none" stroke="var(--color-primary)" strokeWidth="1.6"/>
+            <circle cx="14.5" cy="14.5" r="1.15" fill="none" stroke="var(--color-primary)" strokeWidth="1.6"/>
+          </svg>
+        </div>
+        {appliedPromo ? (
+          <div className="promo-card-text">
+            <span className="promo-applied-label">Promo Applied</span>
+            <span className="promo-applied-code">{appliedPromo.code} · -{currency}{appliedPromo.discount}</span>
+          </div>
+        ) : (
+          <span className="promo-card-label">Apply Promo</span>
+        )}
+        <svg className="promo-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-variant)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+
+      {showPromoSheet && (
+        <div className="promo-overlay" onClick={() => setShowPromoSheet(false)}>
+          <div className="promo-sheet" onClick={e => e.stopPropagation()}>
+            <div className="promo-sheet-header">
+              <span className="promo-sheet-title">Apply Promo Code</span>
+              <button className="promo-sheet-close" onClick={() => setShowPromoSheet(false)}>✕</button>
+            </div>
+            <div className={`promo-input-row${promoStatus === 'error' ? ' has-error' : promoStatus === 'success' ? ' has-success' : ''}`}>
+              <input
+                className="promo-input"
+                placeholder="Enter promo code"
+                value={promoInput}
+                onChange={e => { setPromoInput(e.target.value.toUpperCase()); setPromoStatus(null); setPromoError(''); }}
+                onKeyDown={e => e.key === 'Enter' && applyPromo()}
+                autoFocus
+              />
+              <button
+                className={`promo-apply-btn${!promoInput.trim() ? ' disabled' : ''}`}
+                onClick={applyPromo}
+                disabled={!promoInput.trim() || promoStatus === 'loading'}
+              >
+                {promoStatus === 'loading' ? '...' : 'Apply'}
+              </button>
+            </div>
+            {promoStatus === 'error' && <p className="promo-msg error">{promoError}</p>}
+            {promoStatus === 'success' && <p className="promo-msg success">🎉 Promo applied successfully!</p>}
+            {appliedPromo && (
+              <div className="promo-applied-row">
+                <span className="promo-applied-tag">{appliedPromo.code}</span>
+                <span className="promo-applied-save">You save {currency}{appliedPromo.discount}</span>
+                <button className="promo-remove-btn" onClick={removePromo}>Remove</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {canCheckout ? (
         <Link href="/checkout" className="checkout-btn gradient-primary">
@@ -346,18 +485,15 @@ export default function CartPage() {
           transition: background 0.2s, color 0.2s;
         }
         .toggle-option.active {
-          background: #484848;
+          background: #3d3d3d;
           color: #fff;
           font-weight: 400;
         }
         .addr-overlay {
           position: fixed;
-          top: 60px;
-          left: 0;
-          right: 0;
-          bottom: 0;
+          inset: 72px 0 0 0;
           background: rgba(0,0,0,0.4);
-          z-index: 300;
+          z-index: 999;
           display: flex;
           align-items: flex-end;
           justify-content: center;
@@ -365,7 +501,7 @@ export default function CartPage() {
         .addr-sheet {
           width: 100%;
           max-width: 480px;
-          max-height: calc(100vh - 60px);
+          max-height: calc(100dvh - 72px);
           overflow-y: auto;
           background: #fff;
           border-radius: 20px 20px 0 0;
@@ -518,26 +654,64 @@ export default function CartPage() {
         .cart-item {
           display: flex;
           gap: var(--space-3);
-          padding: var(--space-3);
+          padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+          align-items: flex-start;
         }
         .cart-item + .cart-item {
           border-top: 1px solid var(--color-border, rgba(0,0,0,0.07));
         }
-        .item-img {
-          width: 72px; height: 72px;
-          border-radius: var(--radius-md);
-          overflow: hidden;
-          flex-shrink: 0;
-          background: var(--color-surface-container);
-        }
-        .item-img img { width: 100%; height: 100%; object-fit: cover; }
-        .img-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
-        
+        .veg-icon { flex-shrink: 0; margin-top: 3px; }
+
         .item-details { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
         .item-top-row { display: flex; justify-content: space-between; align-items: flex-start; }
         .item-top-row h3 { font-family: var(--font-display); font-size: 0.95rem; font-weight: 500; margin-bottom: 2px; }
-        .addons-label { font-size: 0.75rem; color: var(--color-text-variant); }
-        .remove-x { background: none; border: none; color: var(--color-outline-variant); font-size: 0.8rem; cursor: pointer; padding: 4px; }
+        .addons-label { font-size: 0.75rem; color: var(--color-text-variant); margin-top: 2px; }
+
+        .instructions-row {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          padding: var(--space-3) var(--space-4);
+          border-top: 1px solid rgba(0,0,0,0.12);
+        }
+        .instructions-row svg { flex-shrink: 0; }
+        .instructions-input {
+          flex: 1;
+          border: none;
+          outline: none;
+          background: transparent;
+          font-family: var(--font-body);
+          font-size: 0.85rem;
+          color: var(--color-text-variant);
+          resize: none;
+          line-height: 1.5;
+          overflow: hidden;
+        }
+        .instructions-input::placeholder { color: rgba(0,0,0,0.3); }
+        .instructions-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 2px var(--space-4) var(--space-3);
+          gap: var(--space-3);
+        }
+        .instructions-hint {
+          font-size: 0.75rem;
+          color: rgba(0,0,0,0.35);
+          line-height: 1.4;
+          flex: 1;
+        }
+        .instructions-save-btn {
+          flex-shrink: 0;
+          background: none;
+          border: none;
+          padding: 0;
+          font-family: var(--font-display);
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--color-primary);
+          cursor: pointer;
+        }
         
         .item-bottom-row { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-2); }
         .item-price { font-weight: 500; font-size: 0.9rem; }
@@ -567,6 +741,163 @@ export default function CartPage() {
         .qty-val { color: #1a1a1a; font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; min-width: 22px; text-align: center; }
         
         .summary-card { background: var(--color-surface-lowest); border-radius: var(--radius-lg); padding: 0 var(--space-3); margin-top: var(--space-4); }
+
+        .promo-card {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          width: 100%;
+          margin-top: var(--space-4);
+          padding: 14px var(--space-4);
+          background: var(--color-surface-lowest);
+          border: none;
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-ambient);
+          cursor: pointer;
+          text-align: left;
+        }
+        .promo-icon-wrap {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .promo-card-label {
+          flex: 1;
+          font-family: var(--font-display);
+          font-size: 0.92rem;
+          font-weight: 500;
+          color: var(--color-text);
+        }
+        .promo-card-text {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .promo-applied-label {
+          font-size: 0.72rem;
+          font-weight: 500;
+          color: var(--color-primary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .promo-applied-code {
+          font-family: var(--font-display);
+          font-size: 0.88rem;
+          font-weight: 600;
+          color: var(--color-text);
+        }
+        .promo-chevron { flex-shrink: 0; }
+
+        .promo-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.4);
+          z-index: 999;
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+        }
+        .promo-sheet {
+          width: 100%;
+          max-width: 480px;
+          background: #fff;
+          border-radius: 20px 20px 0 0;
+          padding: var(--space-5) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
+          animation: sheetUp 0.3s cubic-bezier(0.16,1,0.3,1);
+        }
+        .promo-sheet-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: var(--space-4);
+        }
+        .promo-sheet-title {
+          font-family: var(--font-display);
+          font-size: 1rem;
+          font-weight: 500;
+        }
+        .promo-sheet-close {
+          background: none;
+          border: none;
+          font-size: 1rem;
+          color: var(--color-text-variant);
+          cursor: pointer;
+          padding: 4px;
+        }
+        .promo-input-row {
+          display: flex;
+          gap: var(--space-2);
+          border: 1.5px solid var(--color-outline-variant);
+          border-radius: var(--radius-lg);
+          overflow: hidden;
+          transition: border-color 0.2s;
+        }
+        .promo-input-row.has-error { border-color: #e53935; }
+        .promo-input-row.has-success { border-color: #22c55e; }
+        .promo-input {
+          flex: 1;
+          padding: 13px var(--space-3);
+          border: none;
+          outline: none;
+          font-family: var(--font-display);
+          font-size: 0.95rem;
+          font-weight: 600;
+          letter-spacing: 0.06em;
+          color: var(--color-text);
+          background: transparent;
+        }
+        .promo-input::placeholder { font-weight: 400; letter-spacing: 0; color: var(--color-outline-variant); }
+        .promo-apply-btn {
+          padding: 0 var(--space-4);
+          background: var(--color-primary);
+          color: #fff;
+          border: none;
+          font-family: var(--font-display);
+          font-size: 0.9rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+        .promo-apply-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+        .promo-msg {
+          font-size: 0.8rem;
+          margin-top: var(--space-2);
+          padding-left: 4px;
+        }
+        .promo-msg.error { color: #e53935; }
+        .promo-msg.success { color: #22c55e; }
+        .promo-applied-row {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          margin-top: var(--space-4);
+          padding: 12px var(--space-3);
+          background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+          border-radius: var(--radius-md, 8px);
+        }
+        .promo-applied-tag {
+          font-family: var(--font-display);
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: var(--color-primary);
+          flex: 1;
+        }
+        .promo-applied-save {
+          font-size: 0.8rem;
+          color: #22c55e;
+          font-weight: 500;
+        }
+        .promo-remove-btn {
+          background: none;
+          border: none;
+          font-size: 0.8rem;
+          color: var(--color-text-variant);
+          cursor: pointer;
+          text-decoration: underline;
+          padding: 0;
+        }
         
         .checkout-btn {
           display: block;
