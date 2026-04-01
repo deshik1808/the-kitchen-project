@@ -507,14 +507,21 @@ export default function CartPage() {
         .section-label { font-size: 0.7rem; font-weight: 500; color: var(--color-text-variant); letter-spacing: 0.1em; margin-top: var(--space-3); }
         .section-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; margin-bottom: var(--space-4); }
         
-        .cart-items { display: flex; flex-direction: column; gap: var(--space-4); }
+        .cart-items {
+          display: flex;
+          flex-direction: column;
+          background: var(--color-surface-lowest);
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-ambient);
+          overflow: hidden;
+        }
         .cart-item {
           display: flex;
           gap: var(--space-3);
           padding: var(--space-3);
-          background: var(--color-surface-lowest);
-          border-radius: var(--radius-lg);
-          box-shadow: var(--shadow-ambient);
+        }
+        .cart-item + .cart-item {
+          border-top: 1px solid var(--color-border, rgba(0,0,0,0.07));
         }
         .item-img {
           width: 72px; height: 72px;

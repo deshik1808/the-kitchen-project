@@ -11,6 +11,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <meta name="color-scheme" content="light" />
         <link id="favicon-main" rel="icon" href="/favicon.ico" />
         <link id="favicon-shortcut" rel="shortcut icon" href="/favicon.ico" />
