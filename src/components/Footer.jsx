@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../lib/StoreContext';
 
 function PolicyModal({ title, content, onClose }) {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
   return (
     <div className="policy-backdrop" onClick={onClose}>
       <div className="policy-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title}>
@@ -39,9 +44,10 @@ function PolicyModal({ title, content, onClose }) {
           border-radius: 0;
           width: 100%;
           max-width: 480px;
-          height: calc(100vh - 72px);
+          height: 100%;
           display: flex;
           flex-direction: column;
+          overflow: hidden;
           animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
