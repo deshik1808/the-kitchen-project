@@ -265,7 +265,7 @@ export default function Home() {
         .menu-page {
           max-width: 480px;
           margin: 0 auto;
-          padding-bottom: 80px;
+          padding-bottom: 8px;
         }
         .hero-section {
           padding: var(--space-3) 0 0;
