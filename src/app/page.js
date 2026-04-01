@@ -10,10 +10,10 @@ import StoreClosed from '../components/StoreClosed';
 import CartDrawer from '../components/CartDrawer';
 import PromotionsCarousel from '../components/PromotionsCarousel';
 import CouponList from '../components/CouponList';
+import MenuDrawer from '../components/MenuDrawer';
 
 export default function Home() {
   const { storeData, loading, error, showToast } = useStore();
-  const [activeCategory, setActiveCategory] = useState('All');
   const [vegOnly, setVegOnly] = useState(null); // null = show all
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,7 +27,6 @@ export default function Home() {
   const discounts = storeData?.discounts ?? [];
   const filteredMenu = useMemo(() => {
     return menu.filter(item => {
-      if (activeCategory !== 'All' && item.category !== activeCategory) return false;
       if (vegOnly === true && item.type?.toLowerCase() !== 'veg') return false;
       if (vegOnly === false && item.type?.toLowerCase() !== 'non-veg') return false;
       if (searchQuery) {
@@ -38,9 +37,9 @@ export default function Home() {
       }
       return true;
     });
-  }, [menu, activeCategory, vegOnly, searchQuery]);
+  }, [menu, vegOnly, searchQuery]);
 
-  const showGrouped = activeCategory === 'All' && !searchQuery;
+  const showGrouped = !searchQuery;
 
   const groupedMenu = useMemo(() => {
     if (!showGrouped) return null;
@@ -52,6 +51,14 @@ export default function Home() {
     });
     return Array.from(map.entries()).map(([category, items]) => ({ category, items }));
   }, [filteredMenu, showGrouped]);
+
+  const scrollToCategory = (cat) => {
+    const el = document.querySelector(`.menu-section[data-category="${CSS.escape(cat)}"]`);
+    if (el) {
+      const top = el.getBoundingClientRect().top + window.scrollY - 140;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     if (!showGrouped || !groupedMenu?.length) {
@@ -154,6 +161,7 @@ export default function Home() {
   const currency = store.currency || '₹';
   const categories = Array.from(new Set(menu.map(item => item.category))).filter(Boolean);
 
+
   const handleAdd = (item) => {
     if (store.open === false || store.open === 'N') {
       showToast('Store is currently closed', 'error');
@@ -163,13 +171,11 @@ export default function Home() {
       setSelectedItem(item);
     } else {
       addToCart({ ...item, qty: 1, addons: [] });
-      showToast(`${item.name} added to cart!`, 'success');
     }
   };
 
   const handleConfirmAdd = (itemWithConfig) => {
     addToCart(itemWithConfig);
-    showToast(`${itemWithConfig.name} added to cart!`, 'success');
     setSelectedItem(null);
   };
 
@@ -189,9 +195,6 @@ export default function Home() {
       <div className={`sticky-group ${isSticky ? 'is-stuck' : ''}`}>
         <div className="sticky-inner-container">
           <CategoryFilter
-            categories={categories}
-            activeCategory={activeCategory}
-            onSelect={setActiveCategory}
             vegOnly={vegOnly}
             onVegToggle={(val) => setVegOnly(vegOnly === val ? null : val)}
             searchQuery={searchQuery}
@@ -249,6 +252,12 @@ export default function Home() {
           onConfirm={handleConfirmAdd}
         />
       )}
+
+      <MenuDrawer
+        categories={categories}
+        menu={menu}
+        onSelectCategory={scrollToCategory}
+      />
 
       <CartDrawer currency={currency} />
 

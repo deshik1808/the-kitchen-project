@@ -84,62 +84,64 @@ export default function AddOnModal({ item, currency = '₹', onClose, onConfirm 
           width: 100%;
           max-width: 480px;
           border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-          padding: var(--space-2) var(--space-6) var(--space-6);
+          padding: var(--space-2) var(--space-4) var(--space-4);
           animation: sheetUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
           max-height: 85vh;
           overflow-y: auto;
         }
         .drag-handle {
-          width: 36px; height: 4px;
+          width: 32px; height: 3px;
           background: var(--color-outline-variant);
           border-radius: var(--radius-full);
-          margin: 0 auto var(--space-4);
+          margin: 0 auto 14px;
         }
         .modal-head {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          margin-bottom: var(--space-4);
+          margin-bottom: 14px;
         }
         .modal-head h3 {
-          font-size: 1.3rem;
+          font-size: 1.1rem;
           font-weight: 400;
           margin-bottom: 2px;
         }
         .base-price {
           color: var(--color-primary);
           font-weight: 600;
-          font-size: 1.05rem;
+          font-size: 0.9rem;
         }
         .close-x {
           background: var(--color-surface-container);
           border: none;
           border-radius: var(--radius-full);
-          width: 32px; height: 32px;
-          font-size: 0.85rem;
+          width: 28px; height: 28px;
+          font-size: 0.75rem;
           color: var(--color-text-variant);
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
         }
-        
+
         .addons-section h4 {
           font-family: var(--font-display);
-          font-size: 1rem;
+          font-size: 0.78rem;
           font-weight: 500;
-          margin-bottom: var(--space-3);
-          color: var(--color-text);
+          margin-bottom: 8px;
+          color: var(--color-text-variant);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
         }
         .addon-list {
           display: flex;
           flex-direction: column;
-          gap: var(--space-2);
+          gap: 6px;
         }
         .addon-row {
           display: flex;
           align-items: center;
-          padding: var(--space-3);
+          padding: 10px 12px;
           background: var(--color-surface-container-low);
           border-radius: var(--radius-md);
           cursor: pointer;
@@ -148,12 +150,12 @@ export default function AddOnModal({ item, currency = '₹', onClose, onConfirm 
         .addon-row.selected {
           background: var(--color-primary-light);
         }
-        .addon-check { position: relative; margin-right: 12px; }
+        .addon-check { position: relative; margin-right: 10px; }
         .addon-check input { opacity: 0; position: absolute; }
         .checkmark {
-          width: 20px; height: 20px;
-          border: 2px solid var(--color-outline-variant);
-          border-radius: 6px;
+          width: 17px; height: 17px;
+          border: 1.5px solid var(--color-outline-variant);
+          border-radius: 5px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -166,21 +168,21 @@ export default function AddOnModal({ item, currency = '₹', onClose, onConfirm 
         .addon-row.selected .checkmark::after {
           content: '✓';
           color: white;
-          font-size: 0.7rem;
+          font-size: 0.65rem;
           font-weight: 600;
         }
-        .addon-name { flex: 1; font-weight: 400; font-size: 0.9rem; }
-        .addon-price { font-weight: 400; font-size: 0.85rem; color: var(--color-text-variant); }
+        .addon-name { flex: 1; font-weight: 400; font-size: 0.85rem; }
+        .addon-price { font-weight: 400; font-size: 0.8rem; color: var(--color-text-variant); }
         .addon-price.free { color: var(--color-secondary); font-weight: 500; }
-        
+
         .qty-section {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin: var(--space-5) 0;
-          padding: var(--space-3) 0;
+          margin: 14px 0;
+          padding: 10px 0;
         }
-        .qty-label { font-weight: 500; font-size: 1rem; }
+        .qty-label { font-weight: 500; font-size: 0.88rem; }
         .qty-stepper {
           display: flex;
           align-items: center;
@@ -191,10 +193,10 @@ export default function AddOnModal({ item, currency = '₹', onClose, onConfirm 
           background: var(--color-surface-lowest);
         }
         .qty-btn {
-          width: 36px; height: 36px;
+          width: 30px; height: 30px;
           background: transparent;
           border: none;
-          font-size: 1.15rem;
+          font-size: 1rem;
           color: var(--color-primary);
           font-weight: 400;
           cursor: pointer;
@@ -206,21 +208,21 @@ export default function AddOnModal({ item, currency = '₹', onClose, onConfirm 
         .qty-value {
           font-family: var(--font-display);
           font-weight: 600;
-          font-size: 1.05rem;
-          min-width: 28px;
+          font-size: 0.9rem;
+          min-width: 24px;
           text-align: center;
         }
-        
+
         .confirm-btn {
           width: 100%;
-          padding: 16px;
+          padding: 13px;
           border: none;
-          border-radius: var(--radius-lg);
+          border-radius: var(--radius-md);
           background: var(--color-primary);
           color: white;
           font-family: var(--font-display);
           font-weight: 500;
-          font-size: 1.05rem;
+          font-size: 0.92rem;
           cursor: pointer;
           transition: opacity 0.15s;
         }

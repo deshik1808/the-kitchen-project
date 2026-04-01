@@ -3,32 +3,13 @@
 import { useState } from 'react';
 import SearchDrawer from './SearchDrawer';
 
-export default function CategoryFilter({ categories, activeCategory, onSelect, vegOnly, onVegToggle, searchQuery, onSearch, onAdd, currency, menu }) {
+export default function CategoryFilter({ vegOnly, onVegToggle, searchQuery, onSearch, onAdd, currency, menu }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <div className="filter-bar">
 
-      {/* Row 1: Category pills */}
-      <div className="categories">
-        <button
-          className={`cat-pill ${activeCategory === 'All' ? 'active' : ''}`}
-          onClick={() => onSelect('All')}
-        >
-          All
-        </button>
-        {categories.map(cat => (
-          <button
-            key={cat}
-            className={`cat-pill ${activeCategory === cat ? 'active' : ''}`}
-            onClick={() => onSelect(cat)}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      {/* Row 2: Search trigger + Diet filters — all inline */}
+      {/* Search trigger + Diet filters — all inline */}
       <div className="search-diet-row">
         <button className="search-trigger" onClick={() => setDrawerOpen(true)}>
           <span className="search-placeholder">
@@ -95,36 +76,6 @@ export default function CategoryFilter({ categories, activeCategory, onSelect, v
           position: relative;
           z-index: 20;
           border-radius: inherit;
-        }
-
-        /* --- Category pills --- */
-        .categories {
-          display: flex;
-          gap: 8px;
-          overflow-x: auto;
-          scrollbar-width: none;
-          padding-bottom: var(--space-3);
-        }
-        .categories::-webkit-scrollbar { display: none; }
-        .cat-pill {
-          flex-shrink: 0;
-          padding: 7px 18px;
-          border-radius: var(--radius-full);
-          border: none;
-          background: var(--color-surface-container-high);
-          color: var(--color-text-variant);
-          font-family: var(--font-body);
-          font-size: 0.85rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-          white-space: nowrap;
-        }
-        .cat-pill.active {
-          background: var(--color-primary);
-          color: white;
-          font-weight: 600;
-          box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary), transparent 60%);
         }
 
         /* --- Search + Diet row (all inline, no overflow) --- */

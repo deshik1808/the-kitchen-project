@@ -139,9 +139,14 @@ h1, h2, h3, h4, h5, h6 {
 a {
   color: var(--color-primary);
   text-decoration: none;
-  transition: opacity 0.2s;
 }
-a:hover { opacity: 0.85; }
+
+/* Cart bar — no hover/tap effect (mobile-first) */
+a.cart-bar-btn:hover,
+a.cart-bar-btn:active,
+a.cart-bar-btn:focus {
+  opacity: 1;
+}
 
 button {
   font-family: var(--font-body);

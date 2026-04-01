@@ -21,81 +21,82 @@ export default function CartDrawer({ currency = '₹' }) {
   if (count === 0) return null;
 
   return (
-    <div className="cart-drawer-wrapper">
-      <Link href="/cart" className="cart-drawer">
-        <div className="drawer-left">
-          <span className="item-count">{count} {count === 1 ? 'ITEM' : 'ITEMS'}</span>
-          <span className="pipe">|</span>
-          <span className="total-price">{currency}{subtotal}</span>
-          <span className="plus-tax">plus taxes</span>
-        </div>
-        <div className="drawer-right">
-          <span className="view-text">VIEW CART</span>
-          <span className="arrow">›</span>
-        </div>
+    <div style={{
+      position: 'fixed',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      zIndex: 95,
+      pointerEvents: 'none',
+      display: 'flex',
+      justifyContent: 'center',
+      padding: '0 16px 12px',
+      maxWidth: 480,
+      margin: '0 auto',
+    }}>
+      <Link
+        href="/cart"
+        className="cart-bar-btn"
+        style={{
+          pointerEvents: 'auto',
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          padding: '14px 20px',
+          background: 'var(--color-primary)',
+          color: '#fff',
+          textDecoration: 'none',
+          borderRadius: 'var(--radius-lg, 12px)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+          animation: 'cartSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
+        <span className="cart-bar-left">
+          {currency}{subtotal}
+          <span className="cart-bar-divider">|</span>
+          {count} {count === 1 ? 'Item' : 'Items'}
+        </span>
+        <span className="cart-bar-right">
+          View Cart
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </span>
       </Link>
 
       <style jsx>{`
-        .cart-drawer-wrapper {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          z-index: 95;
-          padding: var(--space-3) var(--space-6);
-          pointer-events: none;
-          display: flex;
-          justify-content: center;
+        .cart-bar-btn:hover, .cart-bar-btn:active {
+          opacity: 1 !important;
+          background-color: var(--color-primary) !important;
         }
-        .cart-drawer {
-          pointer-events: auto;
-          max-width: 480px;
-          width: 100%;
+        .cart-bar-left {
           display: flex;
-          justify-content: space-between;
+          flex-direction: row;
           align-items: center;
-          padding: 14px 20px;
-          border-radius: var(--radius-lg);
-          background: linear-gradient(135deg, var(--color-primary-dim), var(--color-primary));
-          color: white;
-          text-decoration: none;
-          box-shadow: var(--shadow-glass);
-          backdrop-filter: blur(12px);
-          animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .drawer-left {
-          display: flex;
-          align-items: baseline;
-          gap: 8px;
-        }
-        .item-count {
-          font-family: var(--font-display);
-          font-weight: 500;
-          font-size: 0.75rem;
-          letter-spacing: 0.05em;
-        }
-        .pipe { opacity: 0.5; }
-        .total-price {
-          font-family: var(--font-display);
-          font-weight: 600;
-          font-size: 1.15rem;
-        }
-        .plus-tax {
-          font-size: 0.7rem;
-          opacity: 0.7;
+          gap: 6px;
+          font-size: 0.88rem;
           font-weight: 400;
+          white-space: nowrap;
         }
-        .drawer-right {
+        .cart-bar-divider {
+          opacity: 0.5;
+          font-weight: 300;
+        }
+        .cart-bar-right {
           display: flex;
+          flex-direction: row;
           align-items: center;
-          gap: 4px;
-          font-family: var(--font-display);
-          font-weight: 500;
-          font-size: 0.85rem;
-          letter-spacing: 0.03em;
+          gap: 6px;
+          font-size: 0.88rem;
+          font-weight: 400;
+          white-space: nowrap;
         }
-        .arrow { font-size: 1.2rem; }
-        @keyframes slideUp {
+      `}</style>
+
+      <style jsx global>{`
+        @keyframes cartSlideUp {
           from { transform: translateY(100%); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
         }
