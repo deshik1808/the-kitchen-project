@@ -19,6 +19,17 @@ export default function RootLayout({ children }) {
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              document.addEventListener('touchmove', function(e) {
+                if (e.touches.length > 1) e.preventDefault();
+              }, { passive: false });
+              document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+              document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
+            `,
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
               (function() {
                 try {
                   const raw = sessionStorage.getItem('storeData') || localStorage.getItem('storeData');
