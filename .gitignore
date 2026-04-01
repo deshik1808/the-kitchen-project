@@ -51,3 +51,6 @@ tmp_workflows.json
 .agents/mcp_config.json
 .agent/mcp_config.json
 .mcp.json
+
+.vercel
+.env*.local

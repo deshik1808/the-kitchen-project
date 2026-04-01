@@ -203,9 +203,14 @@ export default function CheckoutPage() {
   return (
     <div className="checkout-page">
       <div className="page-top">
-        <Link href="/cart" className="back-arrow">←</Link>
+        <Link href="/cart" className="back-arrow">
+          <svg width="30" height="30" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="17" cy="17" r="16" stroke="currentColor" strokeWidth="1.2"/>
+            <path d="M21 17H13M13 17L17 13M13 17L17 21" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </Link>
         <h1>Checkout</h1>
-        <div></div>
+        <div className="top-spacer"></div>
       </div>
 
       {/* Delivery / Pickup Toggle */}
@@ -343,8 +348,18 @@ export default function CheckoutPage() {
       <style jsx>{`
         .checkout-page { max-width: 480px; margin: 0 auto; padding: 0 var(--space-6) var(--space-6); }
         .page-top { display: flex; justify-content: space-between; align-items: center; padding: var(--space-3) 0; }
-        .back-arrow { font-size: 1.3rem; color: var(--color-primary); padding: 8px; }
-        h1 { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; }
+        .back-arrow {
+          width: 30px; height: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #000;
+          flex-shrink: 0;
+          transition: transform 0.2s;
+        }
+        .back-arrow:hover { transform: scale(1.05); color: #000; }
+        .top-spacer { width: 30px; flex-shrink: 0; }
+        h1 { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; flex: 1; text-align: center; }
 
         .toggle-row { display: flex; background: var(--color-surface-container-low); border-radius: var(--radius-full); padding: 4px; margin-bottom: var(--space-5); gap: 4px; }
         .toggle-btn { flex: 1; padding: 10px; border: none; background: transparent; border-radius: var(--radius-full); font-family: var(--font-body); font-weight: 500; font-size: 0.9rem; color: var(--color-text-variant); cursor: pointer; transition: all 0.25s; }

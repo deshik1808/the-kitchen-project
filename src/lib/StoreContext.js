@@ -6,6 +6,19 @@ import { applyTheme } from './theme';
 
 const StoreContext = createContext();
 
+// Ensures API response is always safe regardless of what n8n returns.
+// Empty sheets → empty arrays, never crashes the frontend.
+function normalizeStoreData(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  return {
+    store: raw.store && typeof raw.store === 'object' ? raw.store : {},
+    branding: raw.branding && typeof raw.branding === 'object' ? raw.branding : {},
+    menu: Array.isArray(raw.menu) ? raw.menu : [],
+    promotions: Array.isArray(raw.promotions) ? raw.promotions : [],
+    discounts: Array.isArray(raw.discounts) ? raw.discounts : [],
+  };
+}
+
 export function StoreProvider({ children }) {
   const [storeData, setStoreData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,20 +47,22 @@ export function StoreProvider({ children }) {
         const now = Date.now();
 
         if (cached && cacheTime && (now - parseInt(cacheTime) < 300000)) { // 5 min TTL
-          cachedData = JSON.parse(cached);
-          const faviconUrl = cachedData.branding?.faviconUrl || cachedData.store?.faviconUrl;
-
-          setStoreData(cachedData);
-          applyTheme(cachedData.branding);
-          if (cachedData.store?.name) document.title = cachedData.store.name;
-          if (faviconUrl) updateFavicon(faviconUrl);
-          setLoading(false);
+          cachedData = normalizeStoreData(JSON.parse(cached));
+          if (cachedData) {
+            const faviconUrl = cachedData.branding?.faviconUrl || cachedData.store?.faviconUrl;
+            setStoreData(cachedData);
+            applyTheme(cachedData.branding);
+            if (cachedData.store?.name) document.title = cachedData.store.name;
+            if (faviconUrl) updateFavicon(faviconUrl);
+            setLoading(false);
+          }
         }
       } catch (e) {}
 
       // 2. Always Fetch Fresh Data (to ensure Sheets edits reflect)
-      const freshData = await fetchMenu();
-      if (freshData) {
+      const rawFreshData = await fetchMenu();
+      const freshData = normalizeStoreData(rawFreshData);
+      if (freshData && Object.keys(freshData.store).length > 0) {
         setStoreData(freshData);
         sessionStorage.setItem('storeData', JSON.stringify(freshData));
         sessionStorage.setItem('storeDataTime', Date.now().toString());
@@ -64,6 +79,7 @@ export function StoreProvider({ children }) {
 
         setLoading(false);
       } else if (!cachedData) {
+        // Fallback: if fresh fetch fails and no cache, show error
         setError('Failed to load menu data.');
         setLoading(false);
       }
@@ -90,12 +106,13 @@ export function StoreProvider({ children }) {
     // REAL-TIME SYNC: Silently refetch when user returns to tab
     const silentRefetch = async () => {
       if (document.visibilityState === 'visible') {
-        const freshData = await fetchMenu();
-        if (freshData) {
+        const rawData = await fetchMenu();
+        const freshData = normalizeStoreData(rawData);
+        if (freshData && Object.keys(freshData.store).length > 0) {
           setStoreData(freshData);
           sessionStorage.setItem('storeData', JSON.stringify(freshData));
           sessionStorage.setItem('storeDataTime', Date.now().toString());
-          localStorage.setItem('storeData', JSON.stringify(freshData)); // fallback for inline head script
+          localStorage.setItem('storeData', JSON.stringify(freshData));
           if (freshData.branding) applyTheme(freshData.branding);
           const faviconUrl = freshData.branding?.faviconUrl || freshData.store?.faviconUrl;
           if (faviconUrl) {

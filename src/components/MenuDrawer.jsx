@@ -109,23 +109,23 @@ function MenuDrawerPortal({ open, onOpen, onClose, categories, menu, onSelectCat
 
         .menu-drawer-sheet {
           position: fixed;
-          left: 0;
-          right: 0;
+          left: 50%;
+          transform: translateX(-50%) translateY(100%);
           bottom: 0;
           z-index: 201;
           background: #fff;
           border-radius: 20px 20px 0 0;
           max-height: 75vh;
+          width: 100%;
+          max-width: 480px;
           display: flex;
           flex-direction: column;
-          transform: translateY(100%);
           transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
           box-shadow: 0 -4px 32px rgba(0,0,0,0.12);
         }
         .menu-drawer-sheet.open {
-          transform: translateY(0);
+          transform: translateX(-50%) translateY(0);
         }
-
         .menu-drawer-handle {
           width: 36px;
           height: 4px;
@@ -144,8 +144,8 @@ function MenuDrawerPortal({ open, onOpen, onClose, categories, menu, onSelectCat
         }
 
         .menu-drawer-title {
-          font-size: 1.25rem;
-          font-weight: 700;
+          font-size: 1rem;
+          font-weight: 500;
           color: #111;
           letter-spacing: -0.01em;
         }
@@ -196,16 +196,16 @@ function MenuDrawerPortal({ open, onOpen, onClose, categories, menu, onSelectCat
         }
 
         .menu-drawer-cat-name {
-          font-size: 1rem;
+          font-size: 0.9rem;
           font-weight: 400;
-          color: #111;
+          color: #333;
           letter-spacing: -0.01em;
         }
 
         .menu-drawer-cat-count {
-          font-size: 0.9rem;
-          color: #888;
-          font-weight: 400;
+          font-size: 0.8rem;
+          color: #aaa;
+          font-weight: 300;
           flex-shrink: 0;
           margin-left: 8px;
         }

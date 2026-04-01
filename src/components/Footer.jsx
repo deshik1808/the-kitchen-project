@@ -124,10 +124,9 @@ export default function Footer() {
           )}
           {store.address && <p className="address">{store.address}</p>}
           <p className="copyright">{branding.footerText || `© ${new Date().getFullYear()} ${store.name || 'Your Kitchen'}`}</p>
-          {(branding.instagramUrl || branding.googleMapsUrl) && (
+          {branding.instagramUrl && (
             <div className="social">
-              {branding.instagramUrl && <a href={branding.instagramUrl} target="_blank" rel="noreferrer">Instagram</a>}
-              {branding.googleMapsUrl && <a href={branding.googleMapsUrl} target="_blank" rel="noreferrer">📍 Locate Us</a>}
+              <a href={branding.instagramUrl} target="_blank" rel="noreferrer">Instagram</a>
             </div>
           )}
         </div>

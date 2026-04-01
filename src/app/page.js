@@ -185,11 +185,15 @@ export default function Home() {
     <div className="menu-page">
       {!isStoreOpen && <StoreClosed message={store.closedMessage} />}
 
-      <div className="hero-section">
-        <PromotionsCarousel promotions={promotions} />
-      </div>
+      {promotions && promotions.length > 0 && (
+        <div className="hero-section">
+          <PromotionsCarousel promotions={promotions} />
+        </div>
+      )}
 
-      <CouponList discounts={discounts} />
+      {discounts && discounts.length > 0 && (
+        <CouponList discounts={discounts} />
+      )}
 
       <div ref={stickySentinelRef} className="sticky-sentinel" />
       <div className={`sticky-group ${isSticky ? 'is-stuck' : ''}`}>
