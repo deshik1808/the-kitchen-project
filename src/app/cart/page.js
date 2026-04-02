@@ -895,9 +895,9 @@ export default function CartPage() {
         }
         .promo-fs-input-row {
           display: flex;
+          align-items: center;
           background: #fff;
           border-radius: var(--radius-lg);
-          overflow: hidden;
           border: 1.5px solid transparent;
           transition: border-color 0.2s;
         }
@@ -926,6 +926,8 @@ export default function CartPage() {
           font-weight: 600;
           cursor: pointer;
           transition: opacity 0.2s;
+          flex-shrink: 0;
+          white-space: nowrap;
         }
         .promo-fs-apply-btn.disabled { opacity: 0.35; cursor: not-allowed; }
         .promo-msg {
