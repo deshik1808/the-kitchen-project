@@ -228,19 +228,20 @@ export default function CheckoutPage() {
             color: var(--color-text); 
             margin-bottom: var(--space-5); 
           }
-          .order-now-btn { 
+          :global(.order-now-btn) { 
             display: inline-block; 
-            padding: 12px 32px; 
-            background: var(--color-primary); 
-            color: white; 
-            border-radius: var(--radius-full); 
+            padding: 10px 24px; 
+            background-color: var(--color-primary) !important; 
+            color: #ffffff !important; 
+            border-radius: var(--radius-sm); 
             font-weight: 500; 
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             font-family: var(--font-display); 
             text-decoration: none;
             transition: opacity 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
           }
-          .order-now-btn:active {
+          :global(.order-now-btn:active) {
             opacity: 0.8;
           }
         `}</style>
