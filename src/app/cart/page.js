@@ -849,7 +849,9 @@ export default function CartPage() {
           display: flex;
           flex-direction: column;
           max-width: 480px;
+          width: 100%;
           margin: 0 auto;
+          overflow: hidden;
           animation: sheetUp 0.32s cubic-bezier(0.16,1,0.3,1);
         }
         .promo-fs-header {
@@ -905,6 +907,7 @@ export default function CartPage() {
         .promo-fs-input-row.has-success { border-color: #22c55e; }
         .promo-fs-input {
           flex: 1;
+          min-width: 0;
           padding: 14px var(--space-4);
           border: none;
           outline: none;
