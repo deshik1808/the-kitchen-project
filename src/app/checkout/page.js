@@ -178,22 +178,70 @@ export default function CheckoutPage() {
 
   if (cartItems.length === 0 && !isNavigating) {
     return (
-      <div style={{ maxWidth: 480, margin: '0 auto', padding: '3rem 2rem', textAlign: 'center' }}>
-        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🛒</div>
-        <h2 style={{ marginBottom: '1rem' }}>Your Cart is Empty</h2>
-        <p style={{ color: 'var(--color-text-variant)', marginBottom: '1.5rem' }}>
-          Add some delicious items before checking out!
-        </p>
-        <Link href="/" className="btn-primary-link">Browse Menu</Link>
+      <div className="empty-cart">
+        <div className="empty-cart-icon-wrapper">
+          <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="lucide-shopping-cart">
+            <circle cx="8" cy="21" r="1"/>
+            <circle cx="19" cy="21" r="1"/>
+            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+          </svg>
+        </div>
+        <h2 className="empty-cart-title">Your Cart Is Empty</h2>
+        <Link href="/" className="order-now-btn">Order Now</Link>
         <style jsx>{`
-          .btn-primary-link {
-            display: inline-block;
-            padding: 12px 24px;
-            background: var(--color-primary);
-            color: white;
-            border-radius: var(--radius-lg);
-            font-weight: 600;
+          .empty-cart { 
+            max-width: 480px; 
+            margin: 40px auto; 
+            text-align: center; 
+            padding: var(--space-8) var(--space-6); 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 50vh;
+          }
+          .empty-cart-icon-wrapper { 
+            width: 140px;
+            height: 140px;
+            background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--space-5);
+            position: relative;
+          }
+          .empty-cart-icon-wrapper::before,
+          .empty-cart-icon-wrapper::after {
+            content: '+';
+            position: absolute;
+            color: var(--color-outline-variant);
+            font-size: 1.2rem;
+            line-height: 1;
+          }
+          .empty-cart-icon-wrapper::before { top: 25%; left: 18%; }
+          .empty-cart-icon-wrapper::after { bottom: 30%; right: 18%; }
+          .empty-cart-title { 
+            font-family: var(--font-display); 
+            font-size: 1.15rem;
+            font-weight: 400;
+            color: var(--color-text); 
+            margin-bottom: var(--space-5); 
+          }
+          .order-now-btn { 
+            display: inline-block; 
+            padding: 12px 32px; 
+            background: var(--color-primary); 
+            color: white; 
+            border-radius: var(--radius-full); 
+            font-weight: 500; 
+            font-size: 0.95rem;
+            font-family: var(--font-display); 
             text-decoration: none;
+            transition: opacity 0.2s;
+          }
+          .order-now-btn:active {
+            opacity: 0.8;
           }
         `}</style>
       </div>

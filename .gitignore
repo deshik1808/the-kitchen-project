@@ -54,3 +54,18 @@ tmp_workflows.json
 
 .vercel
 .env*.local
+
+# temporary logs and test outputs
+status*.txt
+checklist_output.txt
+modified_files.json
+modified_files_temp.txt
+response.txt
+tmp_find_wf*.py
+menu.json
+fetch_n8n_error.js
+find_menu_workflow.js
+setup_promotions_tab.js
+read_modified.py
+.claude/
+.claudeignore
