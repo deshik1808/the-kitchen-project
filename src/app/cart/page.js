@@ -19,6 +19,8 @@ export default function CartPage() {
   const [instructions, setInstructions] = useState('');
   const [instructionsFocused, setInstructionsFocused] = useState(false);
   const instructionsRef = useRef(null);
+  const addrSheetRef = useRef(null);
+  const [addrValidated, setAddrValidated] = useState(false);
   const [siteHeaderHeight, setSiteHeaderHeight] = useState(72);
   const [showPromoSheet, setShowPromoSheet] = useState(false);
   const [promoInput, setPromoInput] = useState('');
@@ -40,7 +42,9 @@ export default function CartPage() {
     try {
       const result = await validateDiscount(trimmed, subtotal);
       if (result?.valid) {
-        setAppliedPromo({ code: trimmed, discount: result.discount });
+        const promo = { code: trimmed, discount: result.discountAmount };
+        setAppliedPromo(promo);
+        localStorage.setItem('appliedPromo', JSON.stringify(promo));
         setPromoStatus('success');
         setTimeout(() => setShowPromoSheet(false), 800);
       } else {
@@ -57,21 +61,34 @@ export default function CartPage() {
 
   const removePromo = () => {
     setAppliedPromo(null);
+    localStorage.removeItem('appliedPromo');
     setPromoInput('');
     setPromoStatus(null);
     setPromoError('');
   };
 
   const phoneValid = addrForm.phone.length === 10;
+  const canSaveAddress = phoneValid && addrForm.name.trim().length > 0;
 
   const saveAddress = () => {
-    if (!phoneValid) return;
     const parts = [addrForm.house, addrForm.landmark, addrForm.city].filter(Boolean);
     const formatted = parts.join(', ');
     setDeliveryAddress(formatted);
     localStorage.setItem('deliveryAddress', formatted);
     localStorage.setItem('deliveryAddrForm', JSON.stringify(addrForm));
+    setAddrValidated(false);
     setShowAddressSheet(false);
+  };
+
+  const handleSaveAddress = () => {
+    if (!canSaveAddress) {
+      setAddrValidated(true);
+      if (addrSheetRef.current) {
+        addrSheetRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+    saveAddress();
   };
 
   const canCheckout = orderType === 'pickup' || (orderType === 'delivery' && deliveryAddress && addrForm.phone.length === 10);
@@ -108,6 +125,12 @@ export default function CartPage() {
 
     const savedType = localStorage.getItem('deliveryOrderType');
     if (savedType) setOrderType(savedType);
+
+    const savedPromo = localStorage.getItem('appliedPromo');
+    if (savedPromo) try { setAppliedPromo(JSON.parse(savedPromo)); } catch {}
+
+    const savedInstructions = localStorage.getItem('cartInstructions');
+    if (savedInstructions) setInstructions(savedInstructions);
 
     return () => window.removeEventListener('cartUpdated', update);
   }, []);
@@ -195,10 +218,10 @@ export default function CartPage() {
       )}
 
       {showAddressSheet && (
-        <div className="addr-overlay" onClick={() => setShowAddressSheet(false)}>
-          <div className="addr-sheet" onClick={e => e.stopPropagation()}>
+        <div className="addr-overlay" onClick={() => { setShowAddressSheet(false); setAddrValidated(false); }}>
+          <div className="addr-sheet" ref={addrSheetRef} onClick={e => e.stopPropagation()}>
             <div className="addr-header">
-              <button className="addr-back" onClick={() => setShowAddressSheet(false)}>
+              <button className="addr-back" onClick={() => { setShowAddressSheet(false); setAddrValidated(false); }}>
                 <CircleArrowLeft size={26} strokeWidth={1.5} color="#484848" />
               </button>
               <span className="addr-title">Confirm Address</span>
@@ -217,17 +240,19 @@ export default function CartPage() {
 
             <div className="addr-fields">
               {[
-                { key: 'name',     label: 'Name',                       placeholder: 'Enter your name' },
-                { key: 'phone',    label: 'WhatsApp Number',             placeholder: '10-digit mobile number', type: 'tel' },
+                { key: 'name',     label: 'Name',                       placeholder: 'Enter your name', required: true },
+                { key: 'phone',    label: 'WhatsApp Number',             placeholder: '10-digit mobile number', type: 'tel', required: true },
                 { key: 'house',    label: 'House / Flat / Block no.',   placeholder: 'Enter House / Flat / Block no.' },
                 { key: 'landmark', label: 'Landmark / Locality',        placeholder: 'Enter landmark or locality' },
                 { key: 'city',     label: 'City',                       placeholder: 'Enter city' },
-              ].map(({ key, label, placeholder, type }) => (
+              ].map(({ key, label, placeholder, type, required }) => {
+                const isEmpty = required && addrValidated && (key === 'phone' ? addrForm.phone.length < 10 : !addrForm[key].trim());
+                return (
                 <Fragment key={key}>
-                  <div className="addr-field">
+                  <div className={`addr-field${isEmpty ? ' error' : ''}`}>
                     <div className="addr-field-top">
                       <label className="addr-field-label">
-                        {label}{key === 'phone' && <span className="required-star"> *</span>}
+                        {label}{(key === 'phone' || key === 'name') && <span className="required-star"> *</span>}
                       </label>
                       {key === 'phone' && addrForm.phone.length > 0 && (
                         <span className={`phone-hint ${addrForm.phone.length === 10 ? 'valid' : 'invalid'}`}>
@@ -257,10 +282,10 @@ export default function CartPage() {
                     <p className="phone-helper">Owner will WhatsApp you on this number</p>
                   )}
                 </Fragment>
-              ))}
+              ); })}
             </div>
 
-            <button className={`addr-save-btn${!phoneValid ? ' disabled' : ''}`} onClick={saveAddress} disabled={!phoneValid}>Save Address</button>
+            <button className={`addr-save-btn${!canSaveAddress ? ' disabled' : ''}`} onClick={handleSaveAddress}>Save Address</button>
           </div>
         </div>
       )}
@@ -368,6 +393,7 @@ export default function CartPage() {
                 className="instructions-save-btn"
                 onMouseDown={e => e.preventDefault()}
                 onClick={() => {
+                  localStorage.setItem('cartInstructions', instructions);
                   setInstructionsFocused(false);
                   instructionsRef.current?.blur();
                 }}
@@ -400,6 +426,7 @@ export default function CartPage() {
       </button>
 
       <div className="summary-card">
+        <p className="bill-details-title">Bill Details</p>
         <OrderSummary
           subtotal={subtotal}
           deliveryFee={Number(store.deliveryFee || 0)}
@@ -564,7 +591,7 @@ export default function CartPage() {
         }
         .addr-overlay {
           position: fixed;
-          inset: 72px 0 0 0;
+          inset: 0;
           background: rgba(0,0,0,0.4);
           z-index: 999;
           display: flex;
@@ -618,6 +645,9 @@ export default function CartPage() {
         .addr-field { padding: var(--space-3) 0; border-bottom: 1px solid var(--color-outline-variant); transition: border-color 0.2s; }
         .addr-field:last-child { border-bottom: none; }
         .addr-field:focus-within { border-bottom-color: #484848; }
+        .addr-field.error { border-bottom-color: #e53935; }
+        .addr-field.error .addr-field-label { color: #e53935; opacity: 1; }
+        .addr-field.error .required-star { color: #e53935; }
         .addr-field-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         .addr-field-label { font-size: 0.8rem; color: var(--color-text); opacity: 0.65; }
         .phone-hint { font-size: 0.75rem; font-weight: 500; }
@@ -813,7 +843,8 @@ export default function CartPage() {
         .qty-btn.plus { background: transparent; color: var(--color-primary); }
         .qty-val { color: #1a1a1a; font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; min-width: 22px; text-align: center; }
         
-        .summary-card { background: var(--color-surface-lowest); border-radius: var(--radius-lg); padding: 0 var(--space-3); margin-top: var(--space-4); }
+        .summary-card { background: var(--color-surface-lowest); border-radius: var(--radius-lg); padding: 0 var(--space-3) var(--space-1); margin-top: var(--space-4); box-shadow: var(--shadow-ambient); }
+        .bill-details-title { font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--color-text); margin: 0; padding: var(--space-3) 0 0; }
 
         .promo-card {
           display: flex;
@@ -1045,7 +1076,7 @@ export default function CartPage() {
         .promo-tooltip {
           position: absolute;
           bottom: calc(100% + 6px);
-          left: 0;
+          right: 0;
           background: #fff;
           color: var(--color-text);
           font-size: 0.72rem;
@@ -1055,8 +1086,9 @@ export default function CartPage() {
           flex-direction: column;
           gap: 4px;
           width: max-content;
+          max-width: 200px;
           box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-          border: 1px solid var(--color-outline-variant);
+          border: 1px solid rgba(0,0,0,0.08);
           z-index: 10;
         }
         .promo-tooltip-backdrop {

@@ -42,8 +42,8 @@ export default function OrderSummary({ subtotal, discount = 0, deliveryFee = 0, 
           font-weight: 600;
         }
         .row.discount {
-          color: var(--color-secondary);
-          font-weight: 500;
+          color: var(--color-text-variant);
+          font-weight: 400;
         }
         .row.total {
           margin-top: var(--space-2);
