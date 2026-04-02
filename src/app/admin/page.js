@@ -149,7 +149,7 @@ export default function AdminDashboard() {
         .admin-header h2 { display: flex; align-items: center; gap: 12px; }
         .admin-header p { color: var(--color-primary); font-size: 0.85rem; font-weight: 600; }
         .lock-btn { padding: 8px 16px; background: var(--color-surface-dim); border: none; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; }
-        
+
         .loader { width: 12px; height: 12px; border-radius: 50%; background: var(--color-primary); animation: blink 1s infinite alternate; }
         @keyframes blink { from { opacity: 0.2; } to { opacity: 1; } }
 

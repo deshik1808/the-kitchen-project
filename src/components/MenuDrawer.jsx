@@ -17,11 +17,7 @@ function MenuDrawerPortal({ open, onOpen, onClose, categories, menu, onSelectCat
   }, []);
 
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = open ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
@@ -30,7 +26,6 @@ function MenuDrawerPortal({ open, onOpen, onClose, categories, menu, onSelectCat
     onClose();
   };
 
-  // Count items per category from full menu (unfiltered)
   const categoryCounts = categories.map(cat => ({
     name: cat,
     count: menu.filter(item => item.category === cat).length,
@@ -40,188 +35,150 @@ function MenuDrawerPortal({ open, onOpen, onClose, categories, menu, onSelectCat
 
   const content = (
     <>
-      {/* Backdrop */}
-      <div
-        className={`menu-drawer-backdrop ${open ? 'visible' : ''}`}
-        onClick={onClose}
-      />
+      {/* Backdrop — dark film, fades in/out */}
+      <div className={`menu-panel-backdrop ${open ? 'visible' : ''}`} onClick={onClose} />
 
-      {/* Bottom Sheet */}
-      <div className={`menu-drawer-sheet ${open ? 'open' : ''}`} role="dialog" aria-modal="true" aria-label="Menu categories">
-        <div className="menu-drawer-handle" />
-        <div className="menu-drawer-header">
-          <span className="menu-drawer-title">Menu</span>
-          <button className="menu-drawer-close" onClick={onClose} aria-label="Close menu">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-        <div className="menu-drawer-body">
+      <div className="menu-pill-wrapper" style={{ bottom: `${pillBottom}px` }}>
+        {/* Floating category panel — anchored above the pill */}
+        <div className={`menu-panel ${open ? 'open' : ''}`} role="dialog" aria-label="Menu categories">
           {categoryCounts.map(({ name, count }) => (
             <button
               key={name}
-              className="menu-drawer-row"
+              className="menu-panel-row"
               onClick={() => handleSelect(name)}
             >
-              <span className="menu-drawer-cat-name">{name}</span>
-              <span className="menu-drawer-cat-count">({count})</span>
+              <span className="menu-panel-cat-name">{name}</span>
+              <span className="menu-panel-cat-count">{count}</span>
             </button>
           ))}
         </div>
+
+        {/* Pill — toggles between Menu and Close */}
+        <button
+          className={`menu-pill ${open ? 'is-open' : ''}`}
+          onClick={open ? onClose : onOpen}
+          aria-label={open ? 'Close menu' : 'Open menu categories'}
+        >
+          {open ? (
+            <>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+              <span>Close</span>
+            </>
+          ) : (
+            <>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="7" y1="2" x2="7" y2="22" />
+                <line x1="5" y1="2" x2="5" y2="8" />
+                <line x1="9" y1="2" x2="9" y2="8" />
+                <path d="M5 8 Q7 11 9 8" />
+                <line x1="17" y1="2" x2="17" y2="22" />
+                <path d="M17 2 Q21 5 21 10 L17 12" />
+              </svg>
+              <span>Menu</span>
+            </>
+          )}
+        </button>
       </div>
 
-      {/* Floating pill */}
-      <button
-        className="menu-pill"
-        style={{ bottom: `${pillBottom}px` }}
-        onClick={onOpen}
-        aria-label="Open menu categories"
-      >
-        {/* Fork & knife icon — universally recognisable for food ordering */}
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          {/* Fork */}
-          <line x1="7" y1="2" x2="7" y2="22" />
-          <line x1="5" y1="2" x2="5" y2="8" />
-          <line x1="9" y1="2" x2="9" y2="8" />
-          <path d="M5 8 Q7 11 9 8" />
-          {/* Knife */}
-          <line x1="17" y1="2" x2="17" y2="22" />
-          <path d="M17 2 Q21 5 21 10 L17 12" />
-        </svg>
-        <span>Menu</span>
-      </button>
-
       <style>{`
-        .menu-drawer-backdrop {
+        /* Backdrop — dark film like Zomato */
+        .menu-panel-backdrop {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.45);
-          z-index: 200;
+          z-index: 97;
+          background: rgba(0, 0, 0, 0.55);
           opacity: 0;
           pointer-events: none;
-          transition: opacity 0.28s ease;
+          transition: opacity 0.3s ease;
         }
-        .menu-drawer-backdrop.visible {
+        .menu-panel-backdrop.visible {
           opacity: 1;
           pointer-events: auto;
         }
 
-        .menu-drawer-sheet {
+        /* Pill wrapper — mirrors the 480px centered layout */
+        .menu-pill-wrapper {
           position: fixed;
           left: 50%;
-          transform: translateX(-50%) translateY(100%);
-          bottom: 0;
-          z-index: 201;
-          background: #fff;
-          border-radius: 20px 20px 0 0;
-          max-height: 75vh;
+          transform: translateX(-50%);
           width: 100%;
           max-width: 480px;
-          display: flex;
-          flex-direction: column;
-          transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-          box-shadow: 0 -4px 32px rgba(0,0,0,0.12);
-        }
-        .menu-drawer-sheet.open {
-          transform: translateX(-50%) translateY(0);
-        }
-        .menu-drawer-handle {
-          width: 36px;
-          height: 4px;
-          border-radius: 2px;
-          background: #e0e0e0;
-          margin: 12px auto 0;
-          flex-shrink: 0;
+          z-index: 98;
+          pointer-events: none;
         }
 
-        .menu-drawer-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 16px 20px 12px;
-          flex-shrink: 0;
-        }
-
-        .menu-drawer-title {
-          font-size: 1rem;
-          font-weight: 500;
-          color: #111;
-          letter-spacing: -0.01em;
-        }
-
-        .menu-drawer-close {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          background: #f0f0f0;
-          border: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #555;
-          transition: background 0.15s;
-        }
-        .menu-drawer-close:active {
-          background: #e0e0e0;
-        }
-
-        .menu-drawer-body {
+        /* Floating category panel — pops up above the pill */
+        .menu-panel {
+          position: absolute;
+          right: 20px;
+          bottom: 46px;
+          width: 80%;
+          max-height: 300px;
           overflow-y: auto;
-          flex: 1;
-          padding: 0 20px 24px;
           -webkit-overflow-scrolling: touch;
+          background: #fff;
+          border-radius: 14px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.16);
+          pointer-events: none;
+          opacity: 0;
+          transform: scale(0.85) translateY(16px);
+          transform-origin: bottom right;
+          transition: opacity 0.28s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .menu-panel.open {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+          pointer-events: auto;
         }
 
-        .menu-drawer-row {
+        .menu-panel-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
           width: 100%;
-          padding: 18px 0;
+          padding: 14px 16px;
           border: none;
           border-bottom: 1px solid #f2f2f2;
           background: none;
           cursor: pointer;
           text-align: left;
-          transition: background 0.12s;
+          transition: background 0.1s;
         }
-        .menu-drawer-row:last-child {
+        .menu-panel-row:last-child {
           border-bottom: none;
         }
-        .menu-drawer-row:active {
-          background: #f9f9f9;
-          border-radius: 8px;
+        .menu-panel-row:active {
+          background: #f6f6f6;
         }
 
-        .menu-drawer-cat-name {
-          font-size: 0.9rem;
-          font-weight: 400;
-          color: #333;
-          letter-spacing: -0.01em;
+        .menu-panel-cat-name {
+          font-size: 0.82rem;
+          font-weight: 300;
+          color: #222;
         }
 
-        .menu-drawer-cat-count {
-          font-size: 0.8rem;
+        .menu-panel-cat-count {
+          font-size: 0.78rem;
           color: #aaa;
           font-weight: 300;
           flex-shrink: 0;
           margin-left: 8px;
         }
 
-        /* Floating pill */
+        /* Pill */
         .menu-pill {
-          position: fixed;
-          left: 50%;
-          transform: translateX(-50%);
-          z-index: 96;
+          position: absolute;
+          right: 20px;
+          bottom: 0;
+          pointer-events: auto;
           display: flex;
           align-items: center;
           gap: 6px;
           padding: 9px 18px;
-          border-radius: 50px;
-          background: #1a1a1a;
+          border-radius: 10px;
+          background: #3d3d3d;
           color: #fff;
           border: none;
           cursor: pointer;
@@ -229,12 +186,15 @@ function MenuDrawerPortal({ open, onOpen, onClose, categories, menu, onSelectCat
           font-weight: 300;
           letter-spacing: 0.03em;
           box-shadow: 0 4px 20px rgba(0,0,0,0.28);
-          transition: bottom 0.3s cubic-bezier(0.22, 1, 0.36, 1), transform 0.15s, background 0.15s;
+          transition: transform 0.15s, background 0.15s;
           white-space: nowrap;
         }
+        .menu-pill.is-open {
+          background: #222;
+        }
         .menu-pill:active {
-          background: #333;
-          transform: translateX(-50%) scale(0.97);
+          background: #555;
+          transform: scale(0.97);
         }
       `}</style>
     </>

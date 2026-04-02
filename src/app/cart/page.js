@@ -19,6 +19,7 @@ export default function CartPage() {
   const [instructions, setInstructions] = useState('');
   const [instructionsFocused, setInstructionsFocused] = useState(false);
   const instructionsRef = useRef(null);
+  const [siteHeaderHeight, setSiteHeaderHeight] = useState(72);
   const [showPromoSheet, setShowPromoSheet] = useState(false);
   const [promoInput, setPromoInput] = useState('');
   const [promoStatus, setPromoStatus] = useState(null); // null | 'loading' | 'success' | 'error'
@@ -29,14 +30,16 @@ export default function CartPage() {
     setShowAddressSheet(true);
   };
 
-  const applyPromo = async () => {
-    if (!promoInput.trim()) return;
+  const applyPromoCode = async (code) => {
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) return;
+    setPromoInput(trimmed);
     setPromoStatus('loading');
     setPromoError('');
     try {
-      const result = await validateDiscount(promoInput.trim().toUpperCase(), subtotal);
+      const result = await validateDiscount(trimmed, subtotal);
       if (result?.valid) {
-        setAppliedPromo({ code: promoInput.trim().toUpperCase(), discount: result.discount });
+        setAppliedPromo({ code: trimmed, discount: result.discount });
         setPromoStatus('success');
         setTimeout(() => setShowPromoSheet(false), 800);
       } else {
@@ -48,6 +51,8 @@ export default function CartPage() {
       setPromoError('Could not apply code. Try again.');
     }
   };
+
+  const applyPromo = () => applyPromoCode(promoInput);
 
   const removePromo = () => {
     setAppliedPromo(null);
@@ -106,10 +111,16 @@ export default function CartPage() {
     return () => window.removeEventListener('cartUpdated', update);
   }, []);
 
+  useEffect(() => {
+    const header = document.querySelector('.site-header');
+    if (header) setSiteHeaderHeight(header.offsetHeight);
+  }, []);
+
   if (loading) return null;
 
   const store = storeData?.store || {};
   const branding = storeData?.branding || {};
+  const discounts = storeData?.discounts || [];
   const currency = store.currency || '₹';
   const mapsHref = branding.googleMapsUrl ||
     (store.address ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(store.address)}` : null);
@@ -365,16 +376,6 @@ export default function CartPage() {
         )}
       </div>
 
-      <div className="summary-card">
-        <OrderSummary
-          subtotal={subtotal}
-          deliveryFee={Number(store.deliveryFee || 0)}
-          currency={currency}
-          itemCount={getCartItemCount()}
-          discount={appliedPromo?.discount || 0}
-        />
-      </div>
-
       <button className="promo-card" onClick={() => { setShowPromoSheet(true); setPromoStatus(null); setPromoError(''); }}>
         <div className="promo-icon-wrap">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -392,29 +393,49 @@ export default function CartPage() {
         ) : (
           <span className="promo-card-label">Apply Promo</span>
         )}
-        <svg className="promo-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-variant)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="promo-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="9 18 15 12 9 6"/>
         </svg>
       </button>
 
+      <div className="summary-card">
+        <OrderSummary
+          subtotal={subtotal}
+          deliveryFee={Number(store.deliveryFee || 0)}
+          currency={currency}
+          itemCount={getCartItemCount()}
+          discount={appliedPromo?.discount || 0}
+        />
+      </div>
+
       {showPromoSheet && (
-        <div className="promo-overlay" onClick={() => setShowPromoSheet(false)}>
-          <div className="promo-sheet" onClick={e => e.stopPropagation()}>
-            <div className="promo-sheet-header">
-              <span className="promo-sheet-title">Apply Promo Code</span>
-              <button className="promo-sheet-close" onClick={() => setShowPromoSheet(false)}>✕</button>
+        <div className="promo-fullscreen" style={{ top: siteHeaderHeight }}>
+          <div className="promo-fs-header">
+            <button className="promo-fs-back" onClick={() => { setShowPromoSheet(false); setPromoStatus(null); setPromoError(''); }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#484848" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 8 8 12 12 16"/>
+                <line x1="16" y1="12" x2="8" y2="12"/>
+              </svg>
+            </button>
+            <div className="promo-fs-title-group">
+              <span className="promo-fs-title">Apply Coupon</span>
+              <span className="promo-fs-subtitle">Your Cart Value: {currency}{subtotal.toFixed(2)}</span>
             </div>
-            <div className={`promo-input-row${promoStatus === 'error' ? ' has-error' : promoStatus === 'success' ? ' has-success' : ''}`}>
+          </div>
+
+          <div className="promo-fs-body">
+            <div className={`promo-fs-input-row${promoStatus === 'error' ? ' has-error' : promoStatus === 'success' ? ' has-success' : ''}`}>
               <input
-                className="promo-input"
-                placeholder="Enter promo code"
+                className="promo-fs-input"
+                placeholder={discounts.length === 0 ? "No promo's available" : "Enter promo code"}
                 value={promoInput}
                 onChange={e => { setPromoInput(e.target.value.toUpperCase()); setPromoStatus(null); setPromoError(''); }}
                 onKeyDown={e => e.key === 'Enter' && applyPromo()}
                 autoFocus
               />
               <button
-                className={`promo-apply-btn${!promoInput.trim() ? ' disabled' : ''}`}
+                className={`promo-fs-apply-btn${!promoInput.trim() ? ' disabled' : ''}`}
                 onClick={applyPromo}
                 disabled={!promoInput.trim() || promoStatus === 'loading'}
               >
@@ -422,14 +443,42 @@ export default function CartPage() {
               </button>
             </div>
             {promoStatus === 'error' && <p className="promo-msg error">{promoError}</p>}
-            {promoStatus === 'success' && <p className="promo-msg success">🎉 Promo applied successfully!</p>}
-            {appliedPromo && (
-              <div className="promo-applied-row">
-                <span className="promo-applied-tag">{appliedPromo.code}</span>
-                <span className="promo-applied-save">You save {currency}{appliedPromo.discount}</span>
-                <button className="promo-remove-btn" onClick={removePromo}>Remove</button>
-              </div>
-            )}
+            {promoStatus === 'success' && <p className="promo-msg success">Promo applied successfully!</p>}
+
+            <div className="promo-fs-list">
+              {discounts.filter(d => d.showInList !== 'N' && d.showInList !== false).length === 0 ? (
+                <div className="promo-empty-state">
+                  <span>No Promo(s) found!</span>
+                </div>
+              ) : (
+                discounts.filter(d => d.showInList !== 'N' && d.showInList !== false).map((d, i) => (
+                  <div key={i} className={`promo-coupon-card${appliedPromo?.code === d.code ? ' applied' : ''}`}>
+                    <div className="promo-coupon-left">
+                      <div className="promo-coupon-top-row">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 3 L20 3 Q21 3 21 4 L21 10 A2 2 0 0 0 21 14 L21 20 Q21 21 20 21 L4 21 Q3 21 3 20 L3 14 A2 2 0 0 0 3 10 L3 4 Q3 3 4 3 Z"/>
+                          <line x1="9" y1="15" x2="15" y2="9" strokeWidth="1.6"/>
+                          <circle cx="9.5" cy="9.5" r="1.15" fill="none" stroke="var(--color-primary)" strokeWidth="1.6"/>
+                          <circle cx="14.5" cy="14.5" r="1.15" fill="none" stroke="var(--color-primary)" strokeWidth="1.6"/>
+                        </svg>
+                        <span className="promo-coupon-code">{d.code}</span>
+                      </div>
+                      <span className="promo-coupon-desc">
+                        {d.type === 'percent' ? `${d.value}% off` : `${currency}${d.value} off`}
+                        {d.minOrder ? ` · Min order ${currency}${d.minOrder}` : ''}
+                      </span>
+                    </div>
+                    {appliedPromo?.code === d.code ? (
+                      <button className="promo-coupon-remove-btn" onClick={removePromo}>Remove</button>
+                    ) : (
+                      <button className="promo-coupon-apply-btn" onClick={() => applyPromoCode(d.code)}>
+                        Apply
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -790,55 +839,73 @@ export default function CartPage() {
         }
         .promo-chevron { flex-shrink: 0; }
 
-        .promo-overlay {
+        .promo-fullscreen {
           position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.4);
+          left: 0;
+          right: 0;
+          bottom: 0;
           z-index: 999;
+          background: var(--color-surface-low, #f4f4f8);
           display: flex;
-          align-items: flex-end;
-          justify-content: center;
-        }
-        .promo-sheet {
-          width: 100%;
+          flex-direction: column;
           max-width: 480px;
-          background: #fff;
-          border-radius: 20px 20px 0 0;
-          padding: var(--space-5) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
-          animation: sheetUp 0.3s cubic-bezier(0.16,1,0.3,1);
+          margin: 0 auto;
+          animation: sheetUp 0.32s cubic-bezier(0.16,1,0.3,1);
         }
-        .promo-sheet-header {
+        .promo-fs-header {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          margin-bottom: var(--space-4);
+          gap: var(--space-3);
+          padding: var(--space-3) var(--space-4);
+          background: #fff;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          flex-shrink: 0;
         }
-        .promo-sheet-title {
-          font-family: var(--font-display);
-          font-size: 1rem;
-          font-weight: 500;
-        }
-        .promo-sheet-close {
+        .promo-fs-back {
           background: none;
           border: none;
-          font-size: 1rem;
-          color: var(--color-text-variant);
-          cursor: pointer;
           padding: 4px;
-        }
-        .promo-input-row {
+          cursor: pointer;
           display: flex;
-          gap: var(--space-2);
-          border: 1.5px solid var(--color-outline-variant);
+          align-items: center;
+          flex-shrink: 0;
+        }
+        .promo-fs-title-group {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
+        }
+        .promo-fs-title {
+          font-family: var(--font-display);
+          font-size: 1rem;
+          font-weight: 600;
+          color: var(--color-text);
+        }
+        .promo-fs-subtitle {
+          font-size: 0.78rem;
+          color: var(--color-text-variant);
+        }
+        .promo-fs-body {
+          flex: 1;
+          overflow-y: auto;
+          padding: var(--space-4);
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3);
+        }
+        .promo-fs-input-row {
+          display: flex;
+          background: #fff;
           border-radius: var(--radius-lg);
           overflow: hidden;
+          border: 1.5px solid transparent;
           transition: border-color 0.2s;
         }
-        .promo-input-row.has-error { border-color: #e53935; }
-        .promo-input-row.has-success { border-color: #22c55e; }
-        .promo-input {
+        .promo-fs-input-row.has-error { border-color: #e53935; }
+        .promo-fs-input-row.has-success { border-color: #22c55e; }
+        .promo-fs-input {
           flex: 1;
-          padding: 13px var(--space-3);
+          padding: 14px var(--space-4);
           border: none;
           outline: none;
           font-family: var(--font-display);
@@ -848,11 +915,11 @@ export default function CartPage() {
           color: var(--color-text);
           background: transparent;
         }
-        .promo-input::placeholder { font-weight: 400; letter-spacing: 0; color: var(--color-outline-variant); }
-        .promo-apply-btn {
+        .promo-fs-input::placeholder { font-weight: 400; letter-spacing: 0; color: var(--color-text-variant); }
+        .promo-fs-apply-btn {
           padding: 0 var(--space-4);
-          background: var(--color-primary);
-          color: #fff;
+          background: none;
+          color: var(--color-primary);
           border: none;
           font-family: var(--font-display);
           font-size: 0.9rem;
@@ -860,43 +927,88 @@ export default function CartPage() {
           cursor: pointer;
           transition: opacity 0.2s;
         }
-        .promo-apply-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+        .promo-fs-apply-btn.disabled { opacity: 0.35; cursor: not-allowed; }
         .promo-msg {
           font-size: 0.8rem;
-          margin-top: var(--space-2);
+          margin-top: calc(-1 * var(--space-2));
           padding-left: 4px;
         }
         .promo-msg.error { color: #e53935; }
         .promo-msg.success { color: #22c55e; }
-        .promo-applied-row {
+        .promo-fs-list {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3);
+        }
+        .promo-empty-state {
           display: flex;
           align-items: center;
-          gap: var(--space-3);
-          margin-top: var(--space-4);
-          padding: 12px var(--space-3);
-          background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-          border-radius: var(--radius-md, 8px);
-        }
-        .promo-applied-tag {
+          justify-content: center;
+          padding: 80px var(--space-4);
           font-family: var(--font-display);
-          font-size: 0.85rem;
-          font-weight: 700;
-          color: var(--color-primary);
+          font-size: 1rem;
+          color: var(--color-text-variant);
+        }
+        .promo-coupon-card {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px var(--space-4);
+          background: #fff;
+          border-radius: var(--radius-lg);
+          border: 1.5px dashed var(--color-outline-variant);
+          gap: var(--space-3);
+        }
+        .promo-coupon-card.applied {
+          border-color: var(--color-primary);
+          border-style: solid;
+          background: color-mix(in srgb, var(--color-primary) 5%, #fff);
+        }
+        .promo-coupon-left {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
           flex: 1;
+          min-width: 0;
         }
-        .promo-applied-save {
-          font-size: 0.8rem;
-          color: #22c55e;
-          font-weight: 500;
+        .promo-coupon-top-row {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
         }
-        .promo-remove-btn {
+        .promo-coupon-code {
+          font-family: var(--font-display);
+          font-size: 0.92rem;
+          font-weight: 700;
+          color: var(--color-text);
+          letter-spacing: 0.04em;
+        }
+        .promo-coupon-desc {
+          font-size: 0.78rem;
+          color: var(--color-text-variant);
+          padding-left: 24px;
+        }
+        .promo-coupon-apply-btn {
           background: none;
           border: none;
-          font-size: 0.8rem;
-          color: var(--color-text-variant);
+          color: var(--color-primary);
+          font-family: var(--font-display);
+          font-size: 0.88rem;
+          font-weight: 600;
           cursor: pointer;
-          text-decoration: underline;
-          padding: 0;
+          flex-shrink: 0;
+          padding: 4px 0;
+        }
+        .promo-coupon-remove-btn {
+          background: none;
+          border: none;
+          color: #e53935;
+          font-family: var(--font-display);
+          font-size: 0.88rem;
+          font-weight: 600;
+          cursor: pointer;
+          flex-shrink: 0;
+          padding: 4px 0;
         }
         
         .checkout-btn {
