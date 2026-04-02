@@ -1,15 +1,20 @@
 "use client";
 
 import { useEffect, useState, useRef, Fragment } from 'react';
-import { getCart, updateQuantity, getCartSubtotal, getCartItemCount } from '../../lib/cart';
+import { getCart, updateQuantity, getCartSubtotal, getCartItemCount, clearCart } from '../../lib/cart';
 import { validateDiscount } from '../../lib/api';
 import { useStore } from '../../lib/StoreContext';
+import { generateOrderId } from '../../lib/orderUtils';
+import { buildWaUrl } from '../../lib/whatsapp';
 import OrderSummary from '../../components/OrderSummary';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { CircleArrowLeft, MapPinned, MapPin } from 'lucide-react';
 
 export default function CartPage() {
+  const router = useRouter();
   const [cartItems, setCartItems] = useState([]);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [subtotal, setSubtotal] = useState(0);
   const [orderType, setOrderType] = useState('delivery');
   const [pendingType, setPendingType] = useState(null);
@@ -149,7 +154,91 @@ export default function CartPage() {
   const mapsHref = branding.googleMapsUrl ||
     (store.address ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(store.address)}` : null);
 
-  if (cartItems.length === 0) {
+  const deliveryFee = orderType === 'delivery' ? Number(store.deliveryFee || 0) : 0;
+  const discountAmount = appliedPromo?.discount || 0;
+  const total = subtotal - discountAmount + deliveryFee;
+
+  const handleWhatsAppOrder = () => {
+    if (!canCheckout || isNavigating) return;
+
+    // Validate address form fields for delivery
+    if (orderType === 'delivery' && !canSaveAddress) {
+      setAddrValidated(true);
+      openAddressSheet();
+      return;
+    }
+
+    setIsNavigating(true);
+
+    const orderId = generateOrderId();
+
+    const formData = {
+      name: addrForm.name,
+      phone: addrForm.phone,
+      deliveryType: orderType,
+      address: orderType === 'delivery' ? deliveryAddress : '',
+      notes: instructions,
+    };
+
+    const totals = {
+      subtotal,
+      discountCode: appliedPromo?.code || '',
+      discountAmount,
+      deliveryFee,
+      total,
+    };
+
+    const waUrl = buildWaUrl(cartItems, formData, store, orderId, totals);
+
+    // Persist order for confirmation page
+    const pendingOrderData = {
+      orderId,
+      customer: { name: addrForm.name, phone: addrForm.phone },
+      items: cartItems.map(item => ({
+        id: item.id, name: item.name, qty: item.qty,
+        price: item.price, addons: item.addons || [],
+      })),
+      discountCode: appliedPromo?.code || '',
+      discountAmount,
+      deliveryType: orderType,
+      address: orderType === 'delivery' ? deliveryAddress : '',
+      notes: instructions,
+      paymentMethod: 'razorpay',
+      subtotal, deliveryFee, total,
+    };
+
+    const POLLING_VERSION = 'v1';
+    try {
+      sessionStorage.removeItem(`orderResult:${POLLING_VERSION}`);
+      sessionStorage.removeItem(`orderSubmitted:${POLLING_VERSION}`);
+      sessionStorage.setItem(`pendingOrderData:${POLLING_VERSION}`, JSON.stringify(pendingOrderData));
+      sessionStorage.setItem(`pendingWaUrl:${POLLING_VERSION}`, waUrl);
+
+      import('../../lib/api').then(api => {
+        api.placeOrder(pendingOrderData).then(result => {
+          if (result?.success) {
+            try {
+              sessionStorage.setItem(`orderResult:${POLLING_VERSION}`, JSON.stringify(result));
+              sessionStorage.setItem(`orderSubmitted:${POLLING_VERSION}`, 'true');
+            } catch (e) { console.error('Error saving order result:', e); }
+          }
+        });
+      });
+    } catch (e) { console.error('Error storing pending order:', e); }
+
+    // Clear cart + persisted cart data
+    clearCart();
+    localStorage.removeItem('appliedPromo');
+    localStorage.removeItem('cartInstructions');
+
+    // Open WhatsApp (must be in user-gesture call stack)
+    window.open(waUrl, '_blank');
+
+    // Navigate to confirmation
+    router.push('/confirmation');
+  };
+
+  if (cartItems.length === 0 && !isNavigating) {
     return (
       <div className="empty-cart">
         <span className="empty-icon">🛒</span>
@@ -429,7 +518,7 @@ export default function CartPage() {
         <p className="bill-details-title">Bill Details</p>
         <OrderSummary
           subtotal={subtotal}
-          deliveryFee={Number(store.deliveryFee || 0)}
+          deliveryFee={deliveryFee}
           currency={currency}
           itemCount={getCartItemCount()}
           discount={appliedPromo?.discount || 0}
@@ -535,12 +624,21 @@ export default function CartPage() {
       )}
 
       {canCheckout ? (
-        <Link href="/checkout" className="checkout-btn gradient-primary">
-          Proceed to Checkout →
-        </Link>
+        <div className="wa-order-wrap">
+          <button className="wa-order-btn" onClick={handleWhatsAppOrder} disabled={isNavigating}>
+            <svg className="wa-icon" viewBox="0 0 24 24" width="22" height="22" fill="#fff">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            WhatsApp Order
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+          <p className="wa-order-hint">WhatsApp will open with your order details. Send the message to confirm.</p>
+        </div>
       ) : (
         <button className="checkout-btn checkout-btn-disabled" onClick={orderType === 'delivery' ? openAddressSheet : undefined}>
-          {orderType === 'delivery' ? 'Add Delivery Address to Continue' : 'Proceed to Checkout →'}
+          {orderType === 'delivery' ? 'Add Delivery Address to Continue' : 'Add Details to Continue'}
         </button>
       )}
 
@@ -1119,30 +1217,52 @@ export default function CartPage() {
           padding: 4px 0;
         }
         
-        .checkout-btn {
-          display: block;
-          text-align: center;
-          padding: 16px;
-          border-radius: var(--radius-lg);
-          color: white;
-          font-family: var(--font-display);
-          font-weight: 700;
-          font-size: 1.05rem;
+        .wa-order-wrap {
           margin-top: var(--space-4);
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-          transition: transform 0.15s;
+          text-align: center;
         }
-        .checkout-btn:hover { transform: translateY(-1px); color: white; opacity: 1; }
+        .wa-order-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          padding: 16px;
+          border: none;
+          border-radius: var(--radius-lg);
+          background: #25D366;
+          color: #fff;
+          font-family: var(--font-display);
+          font-weight: 600;
+          font-size: 1.05rem;
+          cursor: pointer;
+          box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);
+          transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .wa-order-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4); }
+        .wa-order-btn:active { transform: translateY(0); }
+        .wa-order-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .wa-icon { flex-shrink: 0; }
+        .wa-order-hint {
+          margin-top: 8px;
+          font-size: 0.75rem;
+          color: var(--color-text-variant);
+          line-height: 1.4;
+        }
         .checkout-btn-disabled {
           display: block;
           width: 100%;
+          padding: 16px;
+          border: none;
+          border-radius: var(--radius-lg);
           background: var(--color-primary);
           color: #fff;
-          border: none;
+          font-family: var(--font-display);
           font-size: 1rem;
           font-weight: 400;
           opacity: 0.7;
           cursor: pointer;
+          margin-top: var(--space-4);
           box-shadow: none;
         }
         .checkout-btn-disabled:hover { transform: none; opacity: 0.7; color: #fff; }
