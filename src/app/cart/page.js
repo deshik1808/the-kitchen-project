@@ -25,6 +25,7 @@ export default function CartPage() {
   const [promoStatus, setPromoStatus] = useState(null); // null | 'loading' | 'success' | 'error'
   const [promoError, setPromoError] = useState('');
   const [appliedPromo, setAppliedPromo] = useState(null); // {code, discount}
+  const [tooltipCode, setTooltipCode] = useState(null);
 
   const openAddressSheet = () => {
     setShowAddressSheet(true);
@@ -445,6 +446,9 @@ export default function CartPage() {
             {promoStatus === 'error' && <p className="promo-msg error">{promoError}</p>}
             {promoStatus === 'success' && <p className="promo-msg success">Promo applied successfully!</p>}
 
+            {tooltipCode && (
+              <div className="promo-tooltip-backdrop" onClick={() => setTooltipCode(null)} />
+            )}
             <div className="promo-fs-list">
               {discounts.filter(d => d.showInList !== 'N' && d.showInList !== false).length === 0 ? (
                 <div className="promo-empty-state">
@@ -455,7 +459,7 @@ export default function CartPage() {
                   <div key={i} className={`promo-coupon-card${appliedPromo?.code === d.code ? ' applied' : ''}`}>
                     <div className="promo-coupon-left">
                       <div className="promo-coupon-top-row">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M4 3 L20 3 Q21 3 21 4 L21 10 A2 2 0 0 0 21 14 L21 20 Q21 21 20 21 L4 21 Q3 21 3 20 L3 14 A2 2 0 0 0 3 10 L3 4 Q3 3 4 3 Z"/>
                           <line x1="9" y1="15" x2="15" y2="9" strokeWidth="1.6"/>
                           <circle cx="9.5" cy="9.5" r="1.15" fill="none" stroke="var(--color-primary)" strokeWidth="1.6"/>
@@ -463,10 +467,30 @@ export default function CartPage() {
                         </svg>
                         <span className="promo-coupon-code">{d.code}</span>
                       </div>
-                      <span className="promo-coupon-desc">
-                        {d.type === 'percent' ? `${d.value}% off` : `${currency}${d.value} off`}
-                        {d.minOrder ? ` · Min order ${currency}${d.minOrder}` : ''}
-                      </span>
+                      <div className="promo-coupon-desc-row">
+                        <span className="promo-coupon-desc">
+                          {d.type === 'percent' ? `${d.value}% off` : `${currency}${d.value} off`}
+                          {d.minOrder ? ` · Min order ${currency}${d.minOrder}` : ''}
+                        </span>
+                        {(d.maxDiscount || d.expiry) && (
+                          <div className="promo-info-wrap">
+                            <button
+                              className="promo-info-btn"
+                              onClick={e => { e.stopPropagation(); setTooltipCode(tooltipCode === d.code ? null : d.code); }}
+                            >
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                              </svg>
+                            </button>
+                            {tooltipCode === d.code && (
+                              <div className="promo-tooltip">
+                                {d.maxDiscount && <span>Max discount: {currency}{d.maxDiscount}</span>}
+                                {d.expiry && <span>Valid till: {d.expiry}</span>}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     {appliedPromo?.code === d.code ? (
                       <button className="promo-coupon-remove-btn" onClick={removePromo}>Remove</button>
@@ -845,7 +869,7 @@ export default function CartPage() {
           right: 0;
           bottom: 0;
           z-index: 999;
-          background: var(--color-surface-low, #f4f4f8);
+          background: var(--color-bg);
           display: flex;
           flex-direction: column;
           max-width: 480px;
@@ -901,7 +925,11 @@ export default function CartPage() {
           background: #fff;
           border-radius: var(--radius-lg);
           border: 1.5px solid transparent;
-          transition: border-color 0.2s;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .promo-fs-input-row:focus-within {
+          box-shadow: 0 4px 16px rgba(0,0,0,0.13);
         }
         .promo-fs-input-row.has-error { border-color: #e53935; }
         .promo-fs-input-row.has-success { border-color: #22c55e; }
@@ -988,10 +1016,53 @@ export default function CartPage() {
           color: var(--color-text);
           letter-spacing: 0.04em;
         }
+        .promo-coupon-desc-row {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding-left: 30px;
+        }
         .promo-coupon-desc {
           font-size: 0.78rem;
           color: var(--color-text-variant);
-          padding-left: 24px;
+        }
+        .promo-info-wrap {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+        .promo-info-btn {
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          color: var(--color-text-variant);
+          display: flex;
+          align-items: center;
+          flex-shrink: 0;
+          opacity: 0.6;
+        }
+        .promo-tooltip {
+          position: absolute;
+          bottom: calc(100% + 6px);
+          left: 0;
+          background: #fff;
+          color: var(--color-text);
+          font-size: 0.72rem;
+          border-radius: 8px;
+          padding: 8px 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          width: max-content;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+          border: 1px solid var(--color-outline-variant);
+          z-index: 10;
+        }
+        .promo-tooltip-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 9;
         }
         .promo-coupon-apply-btn {
           background: none;
