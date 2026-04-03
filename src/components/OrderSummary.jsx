@@ -9,7 +9,7 @@ export default function OrderSummary({ subtotal, discount = 0, deliveryFee = 0, 
       </div>
       <div className="row">
         <span>Delivery Fee</span>
-        <span className={deliveryFee === 0 ? 'free' : ''}>{deliveryFee > 0 ? `${currency}${deliveryFee.toFixed(2)}` : 'FREE'}</span>
+        <span>{deliveryFee > 0 ? `${currency}${deliveryFee.toFixed(2)}` : 'FREE'}</span>
       </div>
       {discount > 0 && (
         <div className="row discount">
@@ -26,8 +26,8 @@ export default function OrderSummary({ subtotal, discount = 0, deliveryFee = 0, 
         .order-summary {
           display: flex;
           flex-direction: column;
-          gap: var(--space-2);
-          padding: var(--space-4) 0;
+          gap: var(--space-1);
+          padding: var(--space-2) 0;
         }
         .row {
           display: flex;
@@ -37,17 +37,13 @@ export default function OrderSummary({ subtotal, discount = 0, deliveryFee = 0, 
           color: var(--color-text-variant);
           font-weight: 400;
         }
-        .row .free {
-          color: var(--color-secondary);
-          font-weight: 600;
-        }
         .row.discount {
           color: var(--color-text-variant);
           font-weight: 400;
         }
         .row.total {
-          margin-top: var(--space-2);
-          padding-top: var(--space-3);
+          margin-top: var(--space-1);
+          padding-top: var(--space-2);
           border-top: 1px dashed var(--color-outline-variant);
           font-family: var(--font-display);
           font-weight: 700;
