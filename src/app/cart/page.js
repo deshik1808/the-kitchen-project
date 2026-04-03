@@ -317,7 +317,7 @@ export default function CartPage() {
       <div className="top-card">
       <div className="page-top">
         <Link href="/" className="back-arrow">
-          <CircleArrowLeft size={28} strokeWidth={1.5} color="#484848" />
+          <CircleArrowLeft size={22} strokeWidth={1.5} color="#484848" />
         </Link>
         <h1>Your Cart</h1>
         <div className="top-spacer"></div>
@@ -340,7 +340,7 @@ export default function CartPage() {
 
       {orderType === 'delivery' && (
         <div className="delivery-banner">
-          <MapPin size={32} strokeWidth={1.5} style={{color: 'var(--color-primary)', flexShrink: 0}} />
+          <MapPin size={20} strokeWidth={1.5} style={{color: 'var(--color-primary)', flexShrink: 0}} />
           <div className="delivery-info">
             {deliveryAddress ? (
               <>
@@ -438,7 +438,7 @@ export default function CartPage() {
       {orderType === 'pickup' && (
         <div className="pickup-banner">
           <div className="pickup-icon">
-            <MapPinned size={36} strokeWidth={1.5} style={{color: 'var(--color-primary)'}} />
+            <MapPinned size={20} strokeWidth={1.5} style={{color: 'var(--color-primary)'}} />
           </div>
           <div className="pickup-info">
             <p className="pickup-label">Pickup your order from here</p>
@@ -707,15 +707,15 @@ export default function CartPage() {
       )}
 
       <style jsx>{`
-        .cart-page { max-width: 480px; margin: 0 auto; padding: 0 var(--space-6) var(--space-6); }
+        .cart-page { max-width: 480px; margin: 0 auto; padding: 0 var(--space-6) var(--space-4); }
         .top-card {
           background: var(--color-surface-lowest);
-          margin: 0 calc(-1 * var(--space-6)) var(--space-4);
+          margin: 0 calc(-1 * var(--space-6)) var(--space-3);
           padding: 0 var(--space-6) var(--space-1);
           box-shadow: 0 2px 8px rgba(0,0,0,0.06);
           border-radius: 0 0 var(--radius-lg) var(--radius-lg);
         }
-        .page-top { display: flex; justify-content: space-between; align-items: center; padding: var(--space-3) 0; }
+        .page-top { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
         .back-arrow {
           display: flex;
           align-items: center;
@@ -725,7 +725,7 @@ export default function CartPage() {
         }
         .back-arrow:hover { transform: scale(1.05); }
         .top-spacer { width: 34px; flex-shrink: 0; }
-        h1 { font-family: var(--font-display); font-size: 1.15rem; font-weight: 500; flex: 1; text-align: center; }
+        h1 { font-family: var(--font-display); font-size: 1rem; font-weight: 500; flex: 1; text-align: center; }
         .order-type-toggle {
           display: flex;
           background: var(--color-surface-lowest, #f3f3f3);
@@ -736,7 +736,7 @@ export default function CartPage() {
         }
         .toggle-option {
           flex: 1;
-          padding: 12px 0;
+          padding: 9px 0;
           border: none;
           background: transparent;
           font-family: var(--font-display);
@@ -845,8 +845,8 @@ export default function CartPage() {
         .delivery-banner {
           display: flex;
           align-items: center;
-          gap: var(--space-3);
-          padding: var(--space-1) var(--space-3);
+          gap: var(--space-2);
+          padding: 4px var(--space-2);
           background: transparent;
         }
         .delivery-info { flex: 1; min-width: 0; }
@@ -875,8 +875,8 @@ export default function CartPage() {
         .pickup-banner {
           display: flex;
           align-items: center;
-          gap: var(--space-3);
-          padding: var(--space-1) var(--space-3);
+          gap: var(--space-2);
+          padding: 4px var(--space-2);
           background: transparent;
         }
         .pickup-icon { flex-shrink: 0; }
@@ -905,7 +905,7 @@ export default function CartPage() {
           text-decoration: underline;
           white-space: nowrap;
         }
-        .section-label { font-size: 0.7rem; font-weight: 500; color: var(--color-text-variant); letter-spacing: 0.1em; margin-top: var(--space-3); }
+        .section-label { font-size: 0.7rem; font-weight: 500; color: var(--color-text-variant); letter-spacing: 0.1em; margin-top: var(--space-2); }
         .section-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; margin-bottom: var(--space-4); }
         
         .cart-items {
@@ -919,7 +919,7 @@ export default function CartPage() {
         .cart-item {
           display: flex;
           gap: var(--space-3);
-          padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+          padding: 10px var(--space-3) 10px var(--space-4);
           align-items: flex-start;
         }
         .cart-item + .cart-item {
@@ -929,14 +929,14 @@ export default function CartPage() {
 
         .item-details { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
         .item-top-row { display: flex; justify-content: space-between; align-items: flex-start; }
-        .item-top-row h3 { font-family: var(--font-display); font-size: 0.95rem; font-weight: 500; margin-bottom: 2px; }
+        .item-top-row h3 { font-family: var(--font-display); font-size: 0.9rem; font-weight: 500; margin-bottom: 2px; }
         .addons-label { font-size: 0.75rem; color: var(--color-text-variant); margin-top: 2px; }
 
         .instructions-row {
           display: flex;
           align-items: center;
           gap: var(--space-2);
-          padding: var(--space-3) var(--space-4);
+          padding: 8px var(--space-4);
           border-top: 1px solid rgba(0,0,0,0.12);
         }
         .instructions-row svg { flex-shrink: 0; }
@@ -989,7 +989,7 @@ export default function CartPage() {
           overflow: hidden;
         }
         .qty-btn {
-          width: 30px; height: 30px;
+          width: 27px; height: 27px;
           border: none;
           background: transparent;
           color: var(--color-primary);
@@ -1005,16 +1005,16 @@ export default function CartPage() {
         .qty-btn.plus { background: transparent; color: var(--color-primary); }
         .qty-val { color: #1a1a1a; font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; min-width: 22px; text-align: center; }
         
-        .summary-card { background: var(--color-surface-lowest); border-radius: var(--radius-lg); padding: 0 var(--space-3) var(--space-1); margin-top: var(--space-4); box-shadow: var(--shadow-ambient); }
-        .bill-details-title { font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--color-text); margin: 0; padding: var(--space-3) 0 0; }
+        .summary-card { background: var(--color-surface-lowest); border-radius: var(--radius-lg); padding: 0 var(--space-3) var(--space-1); margin-top: var(--space-2); box-shadow: var(--shadow-ambient); }
+        .bill-details-title { font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--color-text); margin: 0; padding: var(--space-2) 0 0; }
 
         .promo-card {
           display: flex;
           align-items: center;
           gap: var(--space-3);
           width: 100%;
-          margin-top: var(--space-4);
-          padding: 14px var(--space-4);
+          margin-top: var(--space-2);
+          padding: 10px var(--space-3);
           background: var(--color-surface-lowest);
           border: none;
           border-radius: var(--radius-lg);
@@ -1282,7 +1282,7 @@ export default function CartPage() {
         }
         
         .wa-order-wrap {
-          margin-top: var(--space-4);
+          margin-top: var(--space-3);
           text-align: center;
         }
         .wa-order-btn {
@@ -1291,7 +1291,7 @@ export default function CartPage() {
           justify-content: center;
           gap: 8px;
           width: 100%;
-          padding: 16px;
+          padding: 13px;
           border: none;
           border-radius: var(--radius-lg);
           background: #25D366;
@@ -1308,8 +1308,8 @@ export default function CartPage() {
         .wa-order-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .wa-icon { flex-shrink: 0; }
         .wa-order-hint {
-          margin-top: 8px;
-          font-size: 0.75rem;
+          margin-top: 4px;
+          font-size: 0.72rem;
           color: var(--color-text-variant);
           line-height: 1.4;
         }

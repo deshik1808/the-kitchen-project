@@ -2,604 +2,645 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useStore } from '../../lib/StoreContext';
-import { placeOrder } from '../../lib/api';
-import { confirmWhatsapp } from '../../lib/api';
+import { placeOrder, confirmWhatsapp } from '../../lib/api';
 import Link from 'next/link';
 
-// ─── Skeleton Pulse ─────────────────────────────────────────────────────────
-function Skeleton({ width = '100%', height = '1.2rem', radius = '6px', style = {} }) {
+// ─── Confetti ─────────────────────────────────────────────────────────────────
+function Confetti() {
+  const items = Array.from({ length: 16 }, (_, i) => i);
+  const colors = ['#FF5200', '#FF8A50', '#FFD166', '#22c55e', '#3b82f6', '#f97316'];
   return (
-    <div
-      className="skeleton"
-      style={{ width, height, borderRadius: radius, ...style }}
-    />
+    <div className="cfg-wrap" aria-hidden="true">
+      {items.map(i => (
+        <span
+          key={i}
+          className="cfg-dot"
+          style={{
+            left: `${(i / 16) * 100}%`,
+            background: colors[i % colors.length],
+            width: `${6 + (i % 3) * 3}px`,
+            height: `${6 + (i % 3) * 3}px`,
+            animationDelay: `${(i * 0.07).toFixed(2)}s`,
+            animationDuration: `${0.8 + (i % 4) * 0.2}s`,
+          }}
+        />
+      ))}
+    </div>
   );
 }
 
-// ─── Order Summary Card ──────────────────────────────────────────────────────
-function OrderSummaryCard({ order, serverTotal }) {
+// ─── Animated Check ───────────────────────────────────────────────────────────
+function CheckIcon({ loading = false }) {
+  if (loading) {
+    return (
+      <div className="icon-ring">
+        <span className="spinner-ring" />
+      </div>
+    );
+  }
+  return (
+    <div className="icon-ring success-ring">
+      <svg viewBox="0 0 52 52" fill="none" width="52" height="52">
+        <circle cx="26" cy="26" r="25" fill="rgba(255,255,255,0.2)" stroke="white" strokeWidth="1.5" />
+        <polyline className="tick-line" points="14,27 22,35 38,18" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+function Sk({ w = '100%', h = '1.2rem', r = '8px', style = {} }) {
+  return <div className="sk" style={{ width: w, height: h, borderRadius: r, ...style }} />;
+}
+
+// ─── Step Badge ───────────────────────────────────────────────────────────────
+function Badge({ label, bg = 'var(--color-primary)' }) {
+  return <span className="badge" style={{ background: bg }}>{label}</span>;
+}
+
+// ─── Order Summary ────────────────────────────────────────────────────────────
+function OrderSummary({ order, serverTotal }) {
   const [open, setOpen] = useState(false);
   const currency = '₹';
   const displayTotal = serverTotal !== undefined ? serverTotal : order.total;
-
   return (
-    <div className="summary-card">
-      <button
-        type="button"
-        className="summary-toggle"
-        onClick={() => setOpen(o => !o)}
-      >
-        <span>📋 Your Order ({order.items.length} item{order.items.length > 1 ? 's' : ''})</span>
-        <span className="summary-chevron">{open ? '▲' : '▼'}</span>
+    <div className="sum-card">
+      <button type="button" className="sum-toggle" onClick={() => setOpen(o => !o)} aria-expanded={open}>
+        <span>🧾 Your Order ({order.items.length} item{order.items.length > 1 ? 's' : ''})</span>
+        <svg className={`sum-chev${open ? ' open' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
       </button>
-
       {open && (
-        <div className="summary-body">
+        <div className="sum-body">
           {order.items.map((item, i) => {
             const addonsTotal = (item.addons || []).reduce((s, a) => s + (a.price || 0), 0);
-            const lineTotal = (item.price + addonsTotal) * item.qty;
             return (
-              <div key={i} className="summary-item">
-                <div className="summary-item-row">
-                  <span>{item.name} × {item.qty}</span>
-                  <span>{currency}{lineTotal}</span>
+              <div key={i} className="sum-item">
+                <div className="sum-row-item">
+                  <span>{item.name} <span className="sum-qty">× {item.qty}</span></span>
+                  <span>{currency}{(item.price + addonsTotal) * item.qty}</span>
                 </div>
-                {(item.addons || []).map((addon, j) => (
-                  <div key={j} className="summary-addon">
-                    + {addon.name} (+{currency}{addon.price || 0})
-                  </div>
+                {(item.addons || []).map((a, j) => (
+                  <div key={j} className="sum-addon">+ {a.name} (+{currency}{a.price || 0})</div>
                 ))}
               </div>
             );
           })}
-
-          <div className="summary-divider" />
-
-          <div className="summary-row">
-            <span>Subtotal</span>
-            <span>{currency}{order.subtotal}</span>
-          </div>
+          <div className="sum-divider" />
+          <div className="sum-row"><span>Subtotal</span><span>{currency}{order.subtotal}</span></div>
           {order.discountAmount > 0 && (
-            <div className="summary-row discount">
+            <div className="sum-row sum-discount">
               <span>Discount{order.discountCode ? ` (${order.discountCode})` : ''}</span>
-              <span>-{currency}{order.discountAmount}</span>
+              <span>−{currency}{order.discountAmount}</span>
             </div>
           )}
           {order.deliveryFee > 0 && (
-            <div className="summary-row">
-              <span>{order.deliveryType === 'delivery' ? 'Delivery Fee' : 'No Delivery'}</span>
-              <span>{currency}{order.deliveryFee}</span>
-            </div>
+            <div className="sum-row"><span>{order.deliveryType === 'delivery' ? 'Delivery Fee' : ''}</span><span>{currency}{order.deliveryFee}</span></div>
           )}
-          <div className="summary-row total-row">
-            <span>Total</span>
-            <span>{currency}{displayTotal}</span>
-          </div>
-
+          <div className="sum-row sum-total"><span>Total</span><span>{currency}{displayTotal}</span></div>
           {serverTotal !== undefined && serverTotal !== order.total && (
-            <p className="total-adjusted">
-              ⚠️ Total adjusted by store (original estimate: {currency}{order.total})
-            </p>
+            <p className="sum-adjusted">⚠️ Adjusted by store (estimate: {currency}{order.total})</p>
           )}
-
-          <div className="summary-divider" />
-
-          {order.deliveryType === 'delivery' && order.address && (
-            <p className="summary-meta">📍 {order.address}</p>
-          )}
-          {order.deliveryType === 'pickup' && (
-            <p className="summary-meta">🏃 Self-Pickup</p>
-          )}
+          {order.deliveryType === 'delivery' && order.address && <p className="sum-meta">📍 {order.address}</p>}
+          {order.deliveryType === 'pickup' && <p className="sum-meta">🏃 Self-Pickup</p>}
         </div>
       )}
     </div>
   );
 }
 
-// ─── Main Confirmation Content ───────────────────────────────────────────────
-function ConfirmationContent() {
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function ConfirmationPage() {
   const { storeData } = useStore();
-
-  // Order state: 'loading' | 'success' | 'failed' | 'empty'
-  const [orderState, setOrderState] = useState('loading');
+  const [phase, setPhase] = useState('loading'); // loading | success | failed | empty
   const [pendingOrder, setPendingOrder] = useState(null);
   const [waUrl, setWaUrl] = useState('');
-  const [orderResult, setOrderResult] = useState(null); // from n8n
-
-  // "I Sent It" button state
-  const [waSentState, setWaSentState] = useState('idle'); // 'idle' | 'sending' | 'done'
-  const [retryState, setRetryState] = useState('idle'); // 'idle' | 'retrying' | 'done'
+  const [orderResult, setOrderResult] = useState(null);
+  const [waSent, setWaSent] = useState('idle'); // idle | sending | done
+  const [retrying, setRetrying] = useState(false);
 
   const upiQrUrl = orderResult?.upiQrUrl || storeData?.store?.upiQrUrl || '';
   const razorpayLink = orderResult?.razorpayLink || '';
   const orderId = orderResult?.orderId || pendingOrder?.orderId || '';
   const serverTotal = orderResult?.total;
+  const storeName = storeData?.store?.name || 'our kitchen';
 
-  // Fire placeOrder once on mount
+  // Run ONCE on mount
   useEffect(() => {
     let cancelled = false;
-    const POLLING_VERSION = 'v1'; // Logic for future schema migrations
+    const VER = 'v1';
 
     async function init() {
       try {
-        let storedPending, storedWa, storedResult, alreadySubmitted;
+        let stored, wa, result, submitted;
         try {
-          storedPending = sessionStorage.getItem(`pendingOrderData:${POLLING_VERSION}`);
-          storedWa = sessionStorage.getItem(`pendingWaUrl:${POLLING_VERSION}`);
-          storedResult = sessionStorage.getItem(`orderResult:${POLLING_VERSION}`);
-          alreadySubmitted = sessionStorage.getItem(`orderSubmitted:${POLLING_VERSION}`) === 'true';
-        } catch (e) {
-          console.error('Session storage inaccessible:', e);
-        }
+          stored    = sessionStorage.getItem(`pendingOrderData:${VER}`);
+          wa        = sessionStorage.getItem(`pendingWaUrl:${VER}`);
+          result    = sessionStorage.getItem(`orderResult:${VER}`);
+          submitted = sessionStorage.getItem(`orderSubmitted:${VER}`) === 'true';
+        } catch (_) {}
 
-        if (storedWa) setWaUrl(storedWa);
+        if (wa) setWaUrl(wa);
 
-        // Case: background order from checkout page already finished
-        if (alreadySubmitted && storedResult) {
-          const parsed = JSON.parse(storedResult);
+        // Already done — result was saved by checkout page background call
+        if (submitted && result) {
           if (!cancelled) {
-            setPendingOrder(storedPending ? JSON.parse(storedPending) : null);
-            setOrderResult(parsed);
-            setOrderState('success');
+            setPendingOrder(stored ? JSON.parse(stored) : null);
+            setOrderResult(JSON.parse(result));
+            setPhase('success');
           }
           return;
         }
 
-        // Case: no order data at all
-        if (!storedPending) {
-          if (!cancelled) setOrderState('empty');
+        // No pending data
+        if (!stored) {
+          if (!cancelled) setPhase('empty');
           return;
         }
 
-        const pending = JSON.parse(storedPending);
+        const pending = JSON.parse(stored);
         if (!cancelled) setPendingOrder(pending);
 
-        // Case: background order is still in flight or hasn't started
-        // Start polling for the result in sessionStorage
+        // Poll sessionStorage for the background order to finish
         let attempts = 0;
-        const maxAttempts = 30; // 15 seconds (2 per sec)
-        let fallbackStarted = false;
-        
-        const pollInterval = setInterval(() => {
-          if (cancelled) {
-            clearInterval(pollInterval);
-            return;
-          }
+        let fallbackFired = false;
+        const timer = setInterval(() => {
+          if (cancelled) { clearInterval(timer); return; }
 
-          let resultStr = null;
-          try {
-            resultStr = sessionStorage.getItem(`orderResult:${POLLING_VERSION}`);
-          } catch (e) {}
+          let res = null;
+          try { res = sessionStorage.getItem(`orderResult:${VER}`); } catch (_) {}
 
-          if (resultStr) {
-            clearInterval(pollInterval);
-            const res = JSON.parse(resultStr);
-            setOrderResult(res);
-            setOrderState('success');
+          if (res) {
+            clearInterval(timer);
+            if (!cancelled) {
+              setOrderResult(JSON.parse(res));
+              setPhase('success');
+            }
             return;
           }
 
           attempts++;
-          
-          // After 2 seconds of polling (4 attempts), if still no result, fire it from here too
-          if (attempts === 4 && !fallbackStarted) {
+
+          // After 2 s of wait, fire as fallback
+          if (attempts === 4 && !fallbackFired) {
+            fallbackFired = true;
             try {
-              if (!sessionStorage.getItem(`orderSubmitted:${POLLING_VERSION}`)) {
-                console.log('Head-start order taking too long, firing fallback from confirmation...');
-                fallbackStarted = true;
-                fireFallbackOrder(pending);
+              if (!sessionStorage.getItem(`orderSubmitted:${VER}`)) {
+                placeOrder(pending).then(r => {
+                  if (!cancelled && r?.success) {
+                    try {
+                      sessionStorage.setItem(`orderResult:${VER}`, JSON.stringify(r));
+                      sessionStorage.setItem(`orderSubmitted:${VER}`, 'true');
+                    } catch (_) {}
+                    setOrderResult(r);
+                    setPhase('success');
+                  }
+                }).catch(console.error);
               }
-            } catch (e) {
-              // fallback if storage check fails
-              fallbackStarted = true;
-              fireFallbackOrder(pending);
-            }
+            } catch (_) { console.error(_); }
           }
 
-          if (attempts >= maxAttempts) {
-            clearInterval(pollInterval);
-            if (!cancelled && orderState === 'loading') setOrderState('failed');
+          if (attempts >= 30) {
+            clearInterval(timer);
+            if (!cancelled) setPhase('failed');
           }
         }, 500);
 
-        async function fireFallbackOrder(p) {
-          try {
-            const result = await placeOrder(p);
-            if (!cancelled && result?.success) {
-              try {
-                sessionStorage.setItem(`orderResult:${POLLING_VERSION}`, JSON.stringify(result));
-                sessionStorage.setItem(`orderSubmitted:${POLLING_VERSION}`, 'true');
-              } catch (e) {}
-              setOrderResult(result);
-              setOrderState('success');
-            }
-          } catch (e) {
-            console.error('Fallback order failed:', e);
-          }
-        }
-
       } catch (err) {
         console.error('Confirmation init error:', err);
-        if (!cancelled) setOrderState('failed');
+        if (!cancelled) setPhase('failed');
       }
     }
 
     init();
     return () => { cancelled = true; };
-  }, [orderState]);
+  }, []); // ← empty deps: run once on mount only
 
-  const handleSentWhatsApp = useCallback(async () => {
-    if (waSentState !== 'idle' || !orderId) return;
-    setWaSentState('sending');
-    await confirmWhatsapp(orderId);
-    // Always transition to done — fail silently
-    setWaSentState('done');
-  }, [orderId, waSentState]);
+  const openWhatsApp = () => { if (waUrl) window.open(waUrl, '_blank'); };
 
-  const openWhatsApp = () => {
-    if (waUrl) window.open(waUrl, '_blank');
-  };
+  const handleSentWA = useCallback(async () => {
+    if (waSent !== 'idle' || !orderId) return;
+    setWaSent('sending');
+    try { await confirmWhatsapp(orderId); } catch (_) {}
+    setWaSent('done');
+  }, [orderId, waSent]);
 
-  // Retry saving order to backend when n8n was unreachable
   const handleRetry = useCallback(async () => {
-    if (retryState !== 'idle' || !pendingOrder) return;
-    setRetryState('retrying');
+    if (retrying || !pendingOrder) return;
+    setRetrying(true);
     try {
-      const result = await placeOrder(pendingOrder);
-      if (result?.success) {
-        sessionStorage.setItem('orderResult', JSON.stringify(result));
-        sessionStorage.setItem('orderSubmitted', 'true');
-        setOrderResult(result);
-        setOrderState('success');
-        setRetryState('done');
-      } else {
-        setRetryState('idle'); // allow another retry
+      const r = await placeOrder(pendingOrder);
+      if (r?.success) {
+        setOrderResult(r);
+        setPhase('success');
       }
-    } catch {
-      setRetryState('idle');
-    }
-  }, [pendingOrder, retryState]);
+    } catch (_) {}
+    setRetrying(false);
+  }, [pendingOrder, retrying]);
 
-  // ── EMPTY STATE ──
-  if (orderState === 'empty') {
-    return (
-      <div className="confirm-page center-page">
-        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
-        <h2>No Recent Order Found</h2>
-        <p style={{ color: 'var(--color-text-variant)', margin: '0.5rem 0 1.5rem' }}>
-          It looks like you haven&apos;t placed an order yet.
-        </p>
-        <Link href="/" className="back-link-btn">← Browse Menu</Link>
-        <ConfirmStyles />
-      </div>
-    );
-  }
+  // ── Determine what to render ──────────────────────────────────────────────
+  const isLoading  = phase === 'loading';
+  const isSuccess  = phase === 'success';
+  const isFailed   = phase === 'failed';
+  const isEmpty    = phase === 'empty';
+  const hasPayment = isSuccess && (upiQrUrl || razorpayLink);
 
-  // ── LOADING STATE ──
-  if (orderState === 'loading' && !pendingOrder) {
-    return (
-      <div className="confirm-page">
-        <div className="success-hero">
-          <div className="check-circle loading-circle">
-            <span className="spinner" />
-          </div>
-          <Skeleton width="220px" height="2rem" style={{ margin: '0 auto 0.5rem' }} />
-          <Skeleton width="140px" height="1rem" style={{ margin: '0 auto' }} />
-        </div>
-        <div className="actions">
-          <Skeleton height="80px" radius="16px" />
-          <Skeleton height="80px" radius="16px" />
-        </div>
-        <ConfirmStyles />
-      </div>
-    );
-  }
-
-  if (orderState === 'loading' && pendingOrder) {
-    return (
-      <div className="confirm-page">
-        <div className="success-hero">
-          <div className="check-circle loading-circle">
-            <span className="spinner" />
-          </div>
-          <h1>Processing Your Order...</h1>
-          <p className="order-id">#{pendingOrder.orderId}</p>
-        </div>
-
-        {waUrl && (
-          <div className="actions">
-            <button onClick={openWhatsApp} className="action-card wa-card">
-              <div className="action-icon">💬</div>
-              <div>
-                <h3>WhatsApp not open?</h3>
-                <p>Tap to re-send your order</p>
-              </div>
-              <span className="action-arrow">→</span>
-            </button>
-          </div>
-        )}
-
-        <div className="loading-note">
-          <span className="dot-pulse" />
-          Saving your order to our kitchen...
-        </div>
-        <ConfirmStyles />
-      </div>
-    );
-  }
-
-  // ── FAILED STATE ──
-  if (orderState === 'failed') {
-    return (
-      <div className="confirm-page">
-        <div className="success-hero">
-          <div className="check-circle" style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </div>
-          <h1>Message Sent ✅</h1>
-          <p className="order-id">#{pendingOrder?.orderId}</p>
-        </div>
-
-        <div className="info-banner">
-          <p>Your WhatsApp message was sent! We're having a brief delay saving to our system.</p>
-        </div>
-
-        <div className="actions">
-          {/* Retry save to backend */}
-          <button
-            onClick={handleRetry}
-            className="action-card confirm-wa-card"
-            disabled={retryState === 'retrying'}
-          >
-            {retryState === 'retrying' ? (
-              <><span className="btn-spinner" /> <span>Saving...</span></>
-            ) : (
-              <>
-                <div className="action-icon">🔄</div>
-                <div>
-                  <h3>Retry Save to Kitchen</h3>
-                  <p>Tap to re-send order details to our system</p>
-                </div>
-              </>
-            )}
-          </button>
-
-          {waUrl && (
-            <button onClick={openWhatsApp} className="action-card wa-card">
-              <div className="action-icon">💬</div>
-              <div>
-                <h3>Re-send on WhatsApp</h3>
-                <p>Opens WhatsApp with your order details</p>
-              </div>
-              <span className="action-arrow">→</span>
-            </button>
-          )}
-        </div>
-
-        <div className="footer-note">
-          <Link href="/" className="back-link">← Back to Menu</Link>
-        </div>
-        <ConfirmStyles />
-      </div>
-    );
-  }
-
-  // ── SUCCESS STATE ──
   return (
-    <div className="confirm-page">
-      <div className="success-hero">
-        <div className="check-circle">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+    <div className="cp">
+
+      {/* ── EMPTY ───────────────────────────────────────────────── */}
+      {isEmpty && (
+        <div className="empty-state">
+          <span className="empty-icon">🔍</span>
+          <h2>No Recent Order</h2>
+          <p>It looks like you haven&apos;t placed an order yet.</p>
+          <Link href="/" className="browse-btn">Browse Menu →</Link>
         </div>
-        <h1>Order Confirmed!</h1>
-        <p className="order-id">#{orderId}</p>
-      </div>
-
-      <div className="actions">
-        {/* WhatsApp Re-send */}
-        {waUrl && (
-          <button onClick={openWhatsApp} className="action-card wa-card">
-            <div className="action-icon">💬</div>
-            <div>
-              <h3>Send Order on WhatsApp</h3>
-              <p>
-                {waSentState === 'done'
-                  ? 'Tap again if needed'
-                  : 'Tap to open WhatsApp with your order'}
-              </p>
-            </div>
-            <span className="action-arrow">→</span>
-          </button>
-        )}
-
-        {/* "I Sent It" confirmation */}
-        {waSentState !== 'done' ? (
-          <button
-            onClick={handleSentWhatsApp}
-            className="action-card confirm-wa-card"
-            disabled={waSentState === 'sending'}
-          >
-            {waSentState === 'sending' ? (
-              <><span className="btn-spinner" /> <span>Confirming...</span></>
-            ) : (
-              <>
-                <div className="action-icon">✅</div>
-                <div>
-                  <h3>I&apos;ve Sent the Message</h3>
-                  <p>Tap after sending on WhatsApp</p>
-                </div>
-              </>
-            )}
-          </button>
-        ) : (
-          <div className="action-card sent-done-card">
-            <div className="action-icon">🎉</div>
-            <div>
-              <h3>Order Confirmed!</h3>
-              <p>The kitchen will prepare your order soon</p>
-            </div>
-          </div>
-        )}
-
-        {/* UPI QR Code */}
-        {upiQrUrl && (
-          <div className="action-card qr-card">
-            <h3>Pay via UPI</h3>
-            <img src={upiQrUrl} alt="UPI QR Code" className="qr-img" />
-            <p className="qr-note">Scan with Google Pay, PhonePe, or any UPI app</p>
-          </div>
-        )}
-
-        {/* Razorpay Pay Now — only when link available */}
-        {razorpayLink && (
-          <a href={razorpayLink} className="action-card pay-card" target="_blank" rel="noreferrer">
-            <div className="action-icon">💳</div>
-            <div>
-              <h3>Pay Online</h3>
-              <p>Pay ₹{serverTotal || pendingOrder?.total || ''} securely via Razorpay</p>
-            </div>
-            <span className="action-arrow">→</span>
-          </a>
-        )}
-      </div>
-
-      {/* Order Summary */}
-      {pendingOrder && (
-        <OrderSummaryCard order={pendingOrder} serverTotal={serverTotal} />
       )}
 
-      <div className="footer-note">
-        <p>Thank you for choosing <strong>{storeData?.store?.name || 'us'}</strong>!</p>
-        <Link href="/" className="back-link">← Back to Menu</Link>
-      </div>
+      {/* ── LOADING (no data yet) ────────────────────────────────── */}
+      {isLoading && !pendingOrder && (
+        <div className="load-shell">
+          <CheckIcon loading />
+          <div className="load-title-sk"><Sk w="200px" h="2rem" /></div>
+          <Sk w="130px" h="1rem" style={{ margin: '0 auto' }} />
+          <div className="steps-sk">
+            <Sk h="72px" r="14px" />
+            <Sk h="72px" r="14px" />
+          </div>
+        </div>
+      )}
 
-      <ConfirmStyles />
+      {/* ── LOADING (has order ID) ────────────────────────────────── */}
+      {isLoading && pendingOrder && (
+        <div className="load-shell">
+          <CheckIcon loading />
+          <h2 className="load-h2">Placing Your Order…</h2>
+          <p className="load-sub">#{pendingOrder.orderId}</p>
+          <p className="load-hint">Hang tight, sending it to the kitchen</p>
+          {waUrl && (
+            <button onClick={openWhatsApp} className="step-row wa-row">
+              <div className="step-left">
+                <Badge label="💬" bg="#25D366" />
+                <div className="step-text">
+                  <span className="step-title">WhatsApp not opened?</span>
+                  <span className="step-sub">Tap to re-send your order</span>
+                </div>
+              </div>
+              <span className="step-arrow">→</span>
+            </button>
+          )}
+          <div className="ticker"><span className="tick-dot" />Saving to kitchen system…</div>
+        </div>
+      )}
+
+      {/* ── FAILED ───────────────────────────────────────────────── */}
+      {isFailed && (
+        <>
+          <div className="hero-shell">
+            <div className="hero-arc" aria-hidden="true" />
+            <CheckIcon />
+            <h1 className="hero-title">Message Sent ✅</h1>
+            <p className="hero-id">#{pendingOrder?.orderId}</p>
+            <p className="hero-tag">Your WhatsApp order is on its way</p>
+          </div>
+          <div className="notice">ℹ️ Brief system delay — please retry below. Your WhatsApp message was sent!</div>
+          <div className="steps-shell">
+            <button onClick={handleRetry} disabled={retrying} className="step-row primary-row">
+              <div className="step-left">
+                <Badge label="🔄" bg="var(--color-primary)" />
+                <div className="step-text">
+                  <span className="step-title">{retrying ? 'Saving…' : 'Retry Save to Kitchen'}</span>
+                  <span className="step-sub">Tap to re-send to our system</span>
+                </div>
+              </div>
+            </button>
+            {waUrl && (
+              <button onClick={openWhatsApp} className="step-row wa-row">
+                <div className="step-left">
+                  <Badge label="💬" bg="#25D366" />
+                  <div className="step-text">
+                    <span className="step-title">Re-send on WhatsApp</span>
+                    <span className="step-sub">Opens WhatsApp with your order</span>
+                  </div>
+                </div>
+                <span className="step-arrow">→</span>
+              </button>
+            )}
+          </div>
+          <div className="footer"><Link href="/" className="back-link">← Back to Menu</Link></div>
+        </>
+      )}
+
+      {/* ── SUCCESS ──────────────────────────────────────────────── */}
+      {isSuccess && (
+        <>
+          <div className="hero-shell">
+            <div className="hero-arc" aria-hidden="true" />
+            <Confetti />
+            <CheckIcon />
+            <h1 className="hero-title">Order Confirmed!</h1>
+            <p className="hero-id">#{orderId}</p>
+            <p className="hero-tag">{storeName} will prepare your order soon 🍽️</p>
+          </div>
+
+          <div className="steps-shell">
+
+            {/* Step 1: WhatsApp */}
+            {waUrl && (
+              <div className="step-group">
+                <p className="group-label">Step 1 — Confirm your order</p>
+
+                <button onClick={openWhatsApp} className="step-row wa-row">
+                  <div className="step-left">
+                    <Badge label="1" bg="#25D366" />
+                    <div className="step-text">
+                      <span className="step-title">Send Order on WhatsApp</span>
+                      <span className="step-sub">{waSent === 'done' ? 'Tap again if needed' : 'Tap to open WhatsApp with your order'}</span>
+                    </div>
+                  </div>
+                  <span className="step-arrow">→</span>
+                </button>
+
+                {waSent !== 'done' ? (
+                  <button onClick={handleSentWA} disabled={waSent === 'sending'} className="step-row confirm-row">
+                    <div className="step-left">
+                      <Badge label="✓" bg="var(--color-primary)" />
+                      <div className="step-text">
+                        <span className="step-title">
+                          {waSent === 'sending' && <span className="inline-spin" />}
+                          {waSent === 'sending' ? 'Confirming…' : "I've Sent the Message"}
+                        </span>
+                        <span className="step-sub">Tap after sending on WhatsApp</span>
+                      </div>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="step-row done-row">
+                    <div className="step-left">
+                      <Badge label="🎉" bg="#22c55e" />
+                      <div className="step-text">
+                        <span className="step-title">Kitchen Notified!</span>
+                        <span className="step-sub">Your order is being prepared</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 2: Payment */}
+            {hasPayment && (
+              <div className="step-group">
+                <p className="group-label">Step 2 — Complete payment</p>
+
+                {upiQrUrl && (
+                  <div className="step-row qr-row">
+                    <div className="qr-top">
+                      <Badge label="₹" bg="#3b82f6" />
+                      <div className="step-text">
+                        <span className="step-title">Pay via UPI</span>
+                        <span className="step-sub">Scan with Google Pay, PhonePe, or any UPI app</span>
+                      </div>
+                    </div>
+                    <div className="qr-img-wrap">
+                      <img src={upiQrUrl} alt="UPI QR Code" className="qr-img" />
+                    </div>
+                  </div>
+                )}
+
+                {razorpayLink && (
+                  <a href={razorpayLink} target="_blank" rel="noreferrer" className="step-row pay-row">
+                    <div className="step-left">
+                      <Badge label="💳" bg="#3b82f6" />
+                      <div className="step-text">
+                        <span className="step-title">Pay Online</span>
+                        <span className="step-sub">Pay ₹{serverTotal || pendingOrder?.total || ''} via Razorpay</span>
+                      </div>
+                    </div>
+                    <span className="step-arrow">→</span>
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* Order Summary */}
+            {pendingOrder && <OrderSummary order={pendingOrder} serverTotal={serverTotal} />}
+          </div>
+
+          <div className="footer">
+            <p className="footer-thanks">Thank you for choosing <strong>{storeName}</strong>!</p>
+            <Link href="/" className="back-link">← Back to Menu</Link>
+          </div>
+        </>
+      )}
+
+      {/* ── STYLES (inline = correct jsx scope) ─────────────────── */}
+      <style jsx>{`
+        /* Page */
+        .cp { max-width: 480px; margin: 0 auto; padding-bottom: 3rem; min-height: 60vh; }
+
+        /* Hero */
+        .hero-shell {
+          position: relative;
+          text-align: center;
+          padding: 3.5rem 1.5rem 3.5rem;
+          overflow: hidden;
+          background: linear-gradient(160deg, var(--color-primary-dim) 0%, var(--color-primary) 55%, var(--color-primary-container) 100%);
+          border-radius: 0 0 2.5rem 2.5rem;
+          color: white;
+          margin-bottom: 0;
+        }
+        .hero-arc {
+          position: absolute;
+          bottom: -60px; left: 50%;
+          transform: translateX(-50%);
+          width: 140%; height: 120px;
+          background: var(--color-bg);
+          border-radius: 50% 50% 0 0;
+          z-index: 1;
+        }
+        .hero-shell > *:not(.hero-arc):not(.cfg-wrap) { position: relative; z-index: 2; }
+        .hero-title {
+          font-family: var(--font-display);
+          font-size: clamp(1.7rem, 7vw, 2.2rem);
+          font-weight: 800;
+          color: white;
+          margin: 1rem 0 0.3rem;
+        }
+        .hero-id { font-size: 0.92rem; color: rgba(255,255,255,0.85); font-weight: 600; letter-spacing: 0.04em; }
+        .hero-tag { font-size: 0.88rem; color: rgba(255,255,255,0.8); margin-top: 0.3rem; }
+
+        /* Check Icon */
+        .icon-ring {
+          width: 80px; height: 80px;
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          margin: 0 auto;
+          background: rgba(255,255,255,0.18);
+          animation: pop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both;
+        }
+        .success-ring { background: rgba(255,255,255,0.2); }
+        .tick-line {
+          stroke-dasharray: 42;
+          stroke-dashoffset: 42;
+          animation: draw-tick 0.45s 0.35s cubic-bezier(0.65,0,0.35,1) forwards;
+        }
+        @keyframes draw-tick { to { stroke-dashoffset: 0; } }
+        @keyframes pop { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Loading shell */
+        .load-shell {
+          padding: 3rem 1.5rem 1rem;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.75rem;
+        }
+        .load-h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--color-text); margin: 0; }
+        .load-sub { font-size: 0.9rem; color: var(--color-text-variant); font-weight: 600; margin: 0; }
+        .load-hint { font-size: 0.82rem; color: var(--color-text-variant); margin: 0; }
+        .load-title-sk { margin: 1.25rem 0 0; }
+        .steps-sk { width: 100%; display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.5rem; }
+
+        /* Loading icon variant */
+        .load-shell .icon-ring {
+          background: var(--color-surface-container);
+          animation: none;
+        }
+
+        /* Spinner */
+        .spinner-ring {
+          display: block;
+          width: 34px; height: 34px;
+          border: 3.5px solid var(--color-surface-container-high);
+          border-top-color: var(--color-primary);
+          border-radius: 50%;
+          animation: spin 0.75s linear infinite;
+        }
+        .inline-spin {
+          display: inline-block;
+          width: 13px; height: 13px;
+          border: 2px solid rgba(0,0,0,0.15);
+          border-top-color: var(--color-primary);
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+          vertical-align: middle;
+          margin-right: 5px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Ticker */
+        .ticker {
+          display: flex; align-items: center; gap: 0.5rem;
+          color: var(--color-text-variant);
+          font-size: 0.82rem;
+          margin-top: 0.5rem;
+        }
+        .tick-dot {
+          display: block; width: 8px; height: 8px;
+          border-radius: 50%; background: var(--color-primary);
+          flex-shrink: 0;
+          animation: pulse 1.1s infinite;
+        }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.65)} }
+
+        /* Confetti */
+        .cfg-wrap { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+        .cfg-dot { position: absolute; top: -10px; border-radius: 2px; animation: fall linear both; }
+        @keyframes fall { from{transform:translateY(-10px) rotate(0deg);opacity:1} to{transform:translateY(180px) rotate(720deg);opacity:0} }
+
+        /* Steps */
+        .steps-shell { padding: 1.75rem 1.25rem 0; display: flex; flex-direction: column; gap: 0.75rem; }
+        .step-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        .group-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-outline); padding-left: 0.25rem; margin-bottom: 0.1rem; }
+
+        /* Step Row */
+        .step-row {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 0.9rem; padding: 1rem 1.1rem;
+          background: var(--color-surface-lowest, #fff);
+          border-radius: 1rem; border: none;
+          cursor: pointer; width: 100%; text-align: left;
+          text-decoration: none; color: var(--color-text);
+          font-family: var(--font-body);
+          box-shadow: 0 2px 12px rgba(42,46,65,0.07);
+          transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s;
+        }
+        .step-row:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(42,46,65,0.13); }
+        .step-row:active:not(:disabled) { transform: scale(0.98); }
+        .step-row:disabled { opacity: 0.7; cursor: not-allowed; }
+        .step-left { display: flex; align-items: center; gap: 0.85rem; flex: 1; min-width: 0; }
+        .step-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .step-title { font-family: var(--font-display); font-weight: 700; font-size: 0.93rem; color: var(--color-text); display: flex; align-items: center; gap: 5px; }
+        .step-sub { font-size: 0.77rem; color: var(--color-text-variant); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .step-arrow { font-size: 1.1rem; color: var(--color-primary); font-weight: 800; flex-shrink: 0; margin-left: auto; }
+
+        /* Row variants */
+        .wa-row      { border-left: 3px solid #25D366; }
+        .confirm-row { border-left: 3px solid var(--color-primary); }
+        .done-row    { border-left: 3px solid #22c55e; background: rgba(34,197,94,0.05); cursor: default; }
+        .done-row:hover { transform: none !important; }
+        .pay-row     { border-left: 3px solid #3b82f6; }
+        .primary-row { border-left: 3px solid var(--color-primary); }
+        .qr-row      { flex-direction: column; align-items: stretch; cursor: default; border-left: 3px solid #3b82f6; }
+        .qr-row:hover { transform: none !important; }
+
+        /* QR */
+        .qr-top { display: flex; align-items: center; gap: 0.85rem; }
+        .qr-img-wrap { background: white; border-radius: 0.75rem; border: 1px solid var(--color-surface-container); padding: 0.75rem; display: flex; justify-content: center; }
+        .qr-img { max-width: 190px; width: 100%; display: block; border-radius: 4px; }
+
+        /* Badge */
+        .badge { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 36px; height: 36px; border-radius: 10px; font-size: 1rem; font-weight: 800; color: white; font-family: var(--font-display); }
+
+        /* Skeleton */
+        .sk { background: linear-gradient(90deg, var(--color-surface-container-low) 25%, var(--color-surface-container) 50%, var(--color-surface-container-low) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; display: block; }
+        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+        /* Notice banner */
+        .notice { display: flex; align-items: flex-start; gap: 0.5rem; margin: 1.5rem 1.25rem 0.5rem; padding: 0.85rem 1rem; background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.25); border-radius: 0.75rem; font-size: 0.83rem; color: var(--color-text); line-height: 1.5; }
+
+        /* Order Summary */
+        .sum-card { background: var(--color-surface-lowest,#fff); border-radius: 1rem; overflow: hidden; box-shadow: 0 2px 12px rgba(42,46,65,0.06); }
+        .sum-toggle { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 1rem 1.1rem; background: none; border: none; font-family: var(--font-display); font-size: 0.9rem; font-weight: 700; color: var(--color-text); cursor: pointer; transition: background 0.15s; }
+        .sum-toggle:hover { background: var(--color-surface-container-low); }
+        .sum-chev { transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1); color: var(--color-text-variant); }
+        .sum-chev.open { transform: rotate(180deg); }
+        .sum-body { padding: 0 1.1rem 1rem; }
+        .sum-item { margin-bottom: 0.6rem; }
+        .sum-row-item { display: flex; justify-content: space-between; font-size: 0.87rem; }
+        .sum-qty { color: var(--color-text-variant); font-weight: 400; }
+        .sum-addon { font-size: 0.75rem; color: var(--color-text-variant); padding-left: 0.75rem; margin-top: 2px; }
+        .sum-divider { height: 1px; background: var(--color-surface-container); margin: 0.6rem 0; }
+        .sum-row { display: flex; justify-content: space-between; font-size: 0.84rem; color: var(--color-text-variant); padding: 2px 0; }
+        .sum-discount { color: #22c55e; font-weight: 600; }
+        .sum-total { font-family: var(--font-display); font-weight: 800; font-size: 1rem; color: var(--color-text); margin-top: 0.25rem; }
+        .sum-adjusted { font-size: 0.74rem; color: var(--color-primary); margin-top: 0.35rem; text-align: right; }
+        .sum-meta { font-size: 0.8rem; color: var(--color-text-variant); margin-top: 0.5rem; }
+
+        /* Footer */
+        .footer { text-align: center; padding: 2rem 1.5rem 1rem; }
+        .footer-thanks { font-size: 0.92rem; color: var(--color-text-variant); margin-bottom: 0.75rem; }
+        .footer-thanks strong { color: var(--color-text); font-weight: 700; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.2rem; color: var(--color-primary); font-weight: 700; font-size: 0.9rem; text-decoration: none; transition: gap 0.2s; }
+        .back-link:hover { gap: 0.4rem; }
+
+        /* Empty State */
+        .empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 5rem 2rem 3rem; gap: 0.75rem; }
+        .empty-icon { font-size: 3.5rem; }
+        .empty-state h2 { font-family: var(--font-display); font-size: 1.4rem; color: var(--color-text); margin: 0; }
+        .empty-state p { font-size: 0.9rem; color: var(--color-text-variant); max-width: 260px; line-height: 1.55; margin: 0; }
+        .browse-btn { display: inline-block; margin-top: 0.5rem; padding: 0.75rem 1.75rem; background: var(--color-primary); color: white; border-radius: 9999px; font-weight: 700; font-size: 0.95rem; text-decoration: none; box-shadow: 0 4px 18px rgba(0,0,0,0.15); transition: transform 0.18s, box-shadow 0.18s; }
+        .browse-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 26px rgba(0,0,0,0.2); }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+          .icon-ring, .tick-line, .cfg-dot, .spinner-ring, .tick-dot, .sk { animation: none; }
+          .tick-line { stroke-dashoffset: 0; }
+          .icon-ring { opacity: 1; transform: none; }
+        }
+      `}</style>
     </div>
   );
-}
-
-// ─── Scoped Styles ────────────────────────────────────────────────────────────
-function ConfirmStyles() {
-  return (
-    <style jsx>{`
-      .confirm-page { max-width: 480px; margin: 0 auto; padding: var(--space-6); }
-      .center-page { text-align: center; padding-top: 4rem; }
-
-      /* Hero */
-      .success-hero { text-align: center; margin-bottom: var(--space-6); }
-      .check-circle {
-        width: 72px; height: 72px;
-        border-radius: var(--radius-full);
-        background: linear-gradient(135deg, var(--color-primary-dim, #ff8a50), var(--color-primary));
-        display: flex; align-items: center; justify-content: center;
-        margin: 0 auto var(--space-4);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-        animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      }
-      .loading-circle { animation: none; background: var(--color-surface-container-low); }
-      h1 { font-family: var(--font-display); font-size: 1.6rem; margin-bottom: var(--space-1); }
-      .order-id { font-family: var(--font-body); color: var(--color-text-variant); font-weight: 600; font-size: 1rem; }
-
-      /* Skeleton */
-      .skeleton { background: linear-gradient(90deg, var(--color-surface-container-low) 25%, var(--color-surface-container) 50%, var(--color-surface-container-low) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; display: block; }
-      @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-      /* Spinner */
-      .spinner {
-        width: 28px; height: 28px;
-        border: 3px solid rgba(255,255,255,0.3);
-        border-top-color: white;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-        display: inline-block;
-      }
-      .btn-spinner {
-        width: 16px; height: 16px;
-        border: 2px solid rgba(255,255,255,0.4);
-        border-top-color: white;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-        display: inline-block;
-        margin-right: 8px;
-        vertical-align: middle;
-      }
-      @keyframes spin { to { transform: rotate(360deg); } }
-
-      /* Dot pulse */
-      .loading-note { text-align: center; color: var(--color-text-variant); font-size: 0.85rem; margin-top: var(--space-4); }
-      .dot-pulse { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--color-primary); animation: pulse 1s infinite; margin-right: 6px; vertical-align: middle; }
-      @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
-
-      /* Actions */
-      .actions { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-5); }
-      .action-card {
-        display: flex; align-items: center; gap: var(--space-3);
-        padding: var(--space-4) var(--space-3);
-        background: var(--color-surface-lowest, #fff);
-        border-radius: var(--radius-lg);
-        text-align: left; text-decoration: none;
-        color: var(--color-text); border: none;
-        box-shadow: var(--shadow-ambient, 0 2px 8px rgba(0,0,0,0.08));
-        cursor: pointer; width: 100%;
-        transition: transform 0.15s, box-shadow 0.15s;
-        font-family: var(--font-body);
-      }
-      .action-card:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
-      .action-card:disabled { opacity: 0.7; cursor: not-allowed; }
-      .action-icon { font-size: 1.8rem; flex-shrink: 0; }
-      .action-card h3 { font-family: var(--font-display); font-size: 1rem; font-weight: 700; margin: 0 0 2px; }
-      .action-card p { font-size: 0.8rem; color: var(--color-text-variant); margin: 0; }
-      .action-arrow { margin-left: auto; font-size: 1.2rem; color: var(--color-primary); font-weight: 700; flex-shrink: 0; }
-
-      .wa-card { border-left: 4px solid #25D366; }
-      .pay-card { border-left: 4px solid #3b82f6; }
-      .confirm-wa-card { border-left: 4px solid var(--color-primary); }
-      .sent-done-card { border-left: 4px solid #22c55e; background: rgba(34, 197, 94, 0.05); cursor: default; }
-      .sent-done-card:hover { transform: none !important; }
-
-      /* QR Card */
-      .qr-card { flex-direction: column; text-align: center; justify-content: center; }
-      .qr-card h3 { margin-bottom: var(--space-2); }
-      .qr-img { max-width: 200px; width: 100%; border-radius: var(--radius-md); margin: var(--space-2) 0; }
-      .qr-note { font-size: 0.8rem; opacity: 0.7; margin: 0 !important; }
-
-      /* Info Banner */
-      .info-banner { background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4); }
-      .info-banner p { font-size: 0.9rem; color: var(--color-text); margin: 0; line-height: 1.5; }
-
-      /* Order Summary */
-      .summary-card { background: var(--color-surface-lowest, #fff); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-5); box-shadow: var(--shadow-ambient, 0 2px 8px rgba(0,0,0,0.06)); }
-      .summary-toggle { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: var(--space-4); background: none; border: none; font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; color: var(--color-text); cursor: pointer; }
-      .summary-chevron { font-size: 0.75rem; color: var(--color-text-variant); }
-      .summary-body { padding: 0 var(--space-4) var(--space-4); }
-      .summary-item { margin-bottom: var(--space-2); }
-      .summary-item-row { display: flex; justify-content: space-between; font-size: 0.9rem; }
-      .summary-addon { font-size: 0.78rem; color: var(--color-text-variant); padding-left: 1rem; margin-top: 2px; }
-      .summary-divider { height: 1px; background: var(--color-outline-variant); margin: var(--space-2) 0; }
-      .summary-row { display: flex; justify-content: space-between; font-size: 0.88rem; padding: 2px 0; color: var(--color-text-variant); }
-      .summary-row.discount { color: #22c55e; }
-      .total-row { font-family: var(--font-display); font-weight: 700; color: var(--color-text); font-size: 1rem; margin-top: var(--space-1); }
-      .total-adjusted { font-size: 0.75rem; color: var(--color-primary); margin: var(--space-1) 0 0; text-align: right; }
-      .summary-meta { font-size: 0.82rem; color: var(--color-text-variant); margin: var(--space-2) 0 0; }
-
-      /* Footer */
-      .footer-note { text-align: center; margin-top: var(--space-3); }
-      .footer-note p { font-size: 1rem; margin-bottom: var(--space-3); }
-      .back-link { color: var(--color-primary); font-weight: 600; text-decoration: none; }
-      .back-link-btn { display: inline-block; padding: 12px 24px; background: var(--color-primary); color: white; border-radius: var(--radius-lg); font-weight: 600; text-decoration: none; }
-
-      @keyframes pop {
-        0% { transform: scale(0.3); opacity: 0; }
-        100% { transform: scale(1); opacity: 1; }
-      }
-    `}</style>
-  );
-}
-
-export default function ConfirmationPage() {
-  return <ConfirmationContent />;
 }
