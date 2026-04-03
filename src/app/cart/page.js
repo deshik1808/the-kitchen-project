@@ -340,7 +340,7 @@ export default function CartPage() {
 
       {orderType === 'delivery' && (
         <div className="delivery-banner">
-          <MapPin size={24} strokeWidth={1.5} style={{color: 'var(--color-primary)', flexShrink: 0}} />
+          <MapPin size={28} strokeWidth={1.5} style={{color: 'var(--color-primary)', flexShrink: 0}} />
           <div className="delivery-info">
             {deliveryAddress ? (
               <>
@@ -438,7 +438,7 @@ export default function CartPage() {
       {orderType === 'pickup' && (
         <div className="pickup-banner">
           <div className="pickup-icon">
-            <MapPinned size={24} strokeWidth={1.5} style={{color: 'var(--color-primary)'}} />
+            <MapPinned size={28} strokeWidth={1.5} style={{color: 'var(--color-primary)'}} />
           </div>
           <div className="pickup-info">
             <p className="pickup-label">Pickup your order from here</p>
