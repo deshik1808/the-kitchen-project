@@ -5,10 +5,9 @@ import { useStore } from '../../lib/StoreContext';
 import { placeOrder } from '../../lib/api';
 import { confirmWhatsapp } from '../../lib/api';
 import Link from 'next/link';
-import { CheckCircle, Loader2, MessageCircle, RotateCcw, QrCode, CreditCard, ArrowRight } from 'lucide-react';
 
 // ─── Skeleton Pulse ─────────────────────────────────────────────────────────
-function Skeleton({ width = '100%', height = '1.2rem', radius = '8px', style = {} }) {
+function Skeleton({ width = '100%', height = '1.2rem', radius = '6px', style = {} }) {
   return (
     <div
       className="skeleton"
@@ -30,43 +29,24 @@ function OrderSummaryCard({ order, serverTotal }) {
         className="summary-toggle"
         onClick={() => setOpen(o => !o)}
       >
-        <div className="summary-toggle-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-            <polyline points="10 9 9 9 8 9"/>
-          </svg>
-        </div>
-        <div className="summary-toggle-text">
-          <span className="summary-toggle-title">Order Summary</span>
-          <span className="summary-toggle-count">{order.items.length} item{order.items.length > 1 ? 's' : ''}</span>
-        </div>
-        <div className={`summary-chevron ${open ? 'open' : ''}`}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </div>
+        <span>📋 Your Order ({order.items.length} item{order.items.length > 1 ? 's' : ''})</span>
+        <span className="summary-chevron">{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
-        <div className="summary-body animate-slide-up">
+        <div className="summary-body">
           {order.items.map((item, i) => {
             const addonsTotal = (item.addons || []).reduce((s, a) => s + (a.price || 0), 0);
             const lineTotal = (item.price + addonsTotal) * item.qty;
             return (
               <div key={i} className="summary-item">
-                <div className="summary-item-header">
-                  <span className="summary-item-name">{item.name}</span>
-                  <span className="summary-item-qty">× {item.qty}</span>
+                <div className="summary-item-row">
+                  <span>{item.name} × {item.qty}</span>
+                  <span>{currency}{lineTotal}</span>
                 </div>
-                <div className="summary-item-price">{currency}{lineTotal}</div>
                 {(item.addons || []).map((addon, j) => (
                   <div key={j} className="summary-addon">
-                    <span className="addon-plus">+</span>
-                    <span className="addon-name">{addon.name}</span>
-                    <span className="addon-price">+{currency}{addon.price || 0}</span>
+                    + {addon.name} (+{currency}{addon.price || 0})
                   </div>
                 ))}
               </div>
@@ -76,62 +56,39 @@ function OrderSummaryCard({ order, serverTotal }) {
           <div className="summary-divider" />
 
           <div className="summary-row">
-            <span className="summary-label">Subtotal</span>
-            <span className="summary-value">{currency}{order.subtotal}</span>
+            <span>Subtotal</span>
+            <span>{currency}{order.subtotal}</span>
           </div>
           {order.discountAmount > 0 && (
-            <div className="summary-row summary-row-discount">
-              <span className="summary-label">
-                Discount
-                {order.discountCode && <span className="discount-code"> ({order.discountCode})</span>}
-              </span>
-              <span className="summary-value text-success">-{currency}{order.discountAmount}</span>
+            <div className="summary-row discount">
+              <span>Discount{order.discountCode ? ` (${order.discountCode})` : ''}</span>
+              <span>-{currency}{order.discountAmount}</span>
             </div>
           )}
           {order.deliveryFee > 0 && (
             <div className="summary-row">
-              <span className="summary-label">
-                {order.deliveryType === 'delivery' ? 'Delivery Fee' : 'Pickup'}
-              </span>
-              <span className="summary-value">{currency}{order.deliveryFee}</span>
+              <span>{order.deliveryType === 'delivery' ? 'Delivery Fee' : 'No Delivery'}</span>
+              <span>{currency}{order.deliveryFee}</span>
             </div>
           )}
-          <div className="summary-row summary-row-total">
-            <span className="summary-label-total">Total</span>
-            <span className="summary-value-total">{currency}{displayTotal}</span>
+          <div className="summary-row total-row">
+            <span>Total</span>
+            <span>{currency}{displayTotal}</span>
           </div>
 
           {serverTotal !== undefined && serverTotal !== order.total && (
-            <div className="summary-adjusted">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <span>Total adjusted by store</span>
-            </div>
+            <p className="total-adjusted">
+              ⚠️ Total adjusted by store (original estimate: {currency}{order.total})
+            </p>
           )}
 
           <div className="summary-divider" />
 
           {order.deliveryType === 'delivery' && order.address && (
-            <div className="summary-meta">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="10" r="3"/>
-              </svg>
-              <span>{order.address}</span>
-            </div>
+            <p className="summary-meta">📍 {order.address}</p>
           )}
           {order.deliveryType === 'pickup' && (
-            <div className="summary-meta">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H6"/>
-                <path d="M8 16H4a2 2 0 1 0 0 4h4"/>
-              </svg>
-              <span>Self Pickup</span>
-            </div>
+            <p className="summary-meta">🏃 Self-Pickup</p>
           )}
         </div>
       )}
@@ -147,11 +104,11 @@ function ConfirmationContent() {
   const [orderState, setOrderState] = useState('loading');
   const [pendingOrder, setPendingOrder] = useState(null);
   const [waUrl, setWaUrl] = useState('');
-  const [orderResult, setOrderResult] = useState(null);
+  const [orderResult, setOrderResult] = useState(null); // from n8n
 
   // "I Sent It" button state
-  const [waSentState, setWaSentState] = useState('idle');
-  const [retryState, setRetryState] = useState('idle');
+  const [waSentState, setWaSentState] = useState('idle'); // 'idle' | 'sending' | 'done'
+  const [retryState, setRetryState] = useState('idle'); // 'idle' | 'retrying' | 'done'
 
   const upiQrUrl = orderResult?.upiQrUrl || storeData?.store?.upiQrUrl || '';
   const razorpayLink = orderResult?.razorpayLink || '';
@@ -161,7 +118,7 @@ function ConfirmationContent() {
   // Fire placeOrder once on mount
   useEffect(() => {
     let cancelled = false;
-    const POLLING_VERSION = 'v1';
+    const POLLING_VERSION = 'v1'; // Logic for future schema migrations
 
     async function init() {
       try {
@@ -177,6 +134,7 @@ function ConfirmationContent() {
 
         if (storedWa) setWaUrl(storedWa);
 
+        // Case: background order from checkout page already finished
         if (alreadySubmitted && storedResult) {
           const parsed = JSON.parse(storedResult);
           if (!cancelled) {
@@ -187,6 +145,7 @@ function ConfirmationContent() {
           return;
         }
 
+        // Case: no order data at all
         if (!storedPending) {
           if (!cancelled) setOrderState('empty');
           return;
@@ -195,10 +154,12 @@ function ConfirmationContent() {
         const pending = JSON.parse(storedPending);
         if (!cancelled) setPendingOrder(pending);
 
+        // Case: background order is still in flight or hasn't started
+        // Start polling for the result in sessionStorage
         let attempts = 0;
-        const maxAttempts = 30;
+        const maxAttempts = 30; // 15 seconds (2 per sec)
         let fallbackStarted = false;
-
+        
         const pollInterval = setInterval(() => {
           if (cancelled) {
             clearInterval(pollInterval);
@@ -219,7 +180,8 @@ function ConfirmationContent() {
           }
 
           attempts++;
-
+          
+          // After 2 seconds of polling (4 attempts), if still no result, fire it from here too
           if (attempts === 4 && !fallbackStarted) {
             try {
               if (!sessionStorage.getItem(`orderSubmitted:${POLLING_VERSION}`)) {
@@ -228,6 +190,7 @@ function ConfirmationContent() {
                 fireFallbackOrder(pending);
               }
             } catch (e) {
+              // fallback if storage check fails
               fallbackStarted = true;
               fireFallbackOrder(pending);
             }
@@ -269,6 +232,7 @@ function ConfirmationContent() {
     if (waSentState !== 'idle' || !orderId) return;
     setWaSentState('sending');
     await confirmWhatsapp(orderId);
+    // Always transition to done — fail silently
     setWaSentState('done');
   }, [orderId, waSentState]);
 
@@ -276,6 +240,7 @@ function ConfirmationContent() {
     if (waUrl) window.open(waUrl, '_blank');
   };
 
+  // Retry saving order to backend when n8n was unreachable
   const handleRetry = useCallback(async () => {
     if (retryState !== 'idle' || !pendingOrder) return;
     setRetryState('retrying');
@@ -288,7 +253,7 @@ function ConfirmationContent() {
         setOrderState('success');
         setRetryState('done');
       } else {
-        setRetryState('idle');
+        setRetryState('idle'); // allow another retry
       }
     } catch {
       setRetryState('idle');
@@ -298,22 +263,13 @@ function ConfirmationContent() {
   // ── EMPTY STATE ──
   if (orderState === 'empty') {
     return (
-      <div className="confirm-page confirm-page--empty">
-        <div className="empty-state-container animate-fade-in">
-          <div className="empty-icon">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="M21 21l-4.35-4.35"/>
-            </svg>
-          </div>
-          <h1 className="empty-title">No Recent Order Found</h1>
-          <p className="empty-description">
-            It looks like you haven&apos;t placed an order yet.
-          </p>
-          <Link href="/" className="btn btn-primary">
-            Browse Menu
-          </Link>
-        </div>
+      <div className="confirm-page center-page">
+        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
+        <h2>No Recent Order Found</h2>
+        <p style={{ color: 'var(--color-text-variant)', margin: '0.5rem 0 1.5rem' }}>
+          It looks like you haven&apos;t placed an order yet.
+        </p>
+        <Link href="/" className="back-link-btn">← Browse Menu</Link>
         <ConfirmStyles />
       </div>
     );
@@ -323,16 +279,16 @@ function ConfirmationContent() {
   if (orderState === 'loading' && !pendingOrder) {
     return (
       <div className="confirm-page">
-        <div className="hero hero--loading animate-fade-in">
-          <div className="check-circle check-circle--loading">
-            <Loader2 className="spinner spinner--large" />
+        <div className="success-hero">
+          <div className="check-circle loading-circle">
+            <span className="spinner" />
           </div>
-          <Skeleton width="200px" height="28px" style={{ margin: '0 auto 12px' }} />
-          <Skeleton width="120px" height="16px" style={{ margin: '0 auto' }} />
+          <Skeleton width="220px" height="2rem" style={{ margin: '0 auto 0.5rem' }} />
+          <Skeleton width="140px" height="1rem" style={{ margin: '0 auto' }} />
         </div>
-        <div className="actions-column">
-          <Skeleton height="88px" radius="12px" />
-          <Skeleton height="88px" radius="12px" />
+        <div className="actions">
+          <Skeleton height="80px" radius="16px" />
+          <Skeleton height="80px" radius="16px" />
         </div>
         <ConfirmStyles />
       </div>
@@ -342,32 +298,30 @@ function ConfirmationContent() {
   if (orderState === 'loading' && pendingOrder) {
     return (
       <div className="confirm-page">
-        <div className="hero animate-fade-in">
-          <div className="check-circle check-circle--loading">
-            <Loader2 className="spinner spinner--large" />
+        <div className="success-hero">
+          <div className="check-circle loading-circle">
+            <span className="spinner" />
           </div>
-          <h1 className="hero-title">Processing Your Order...</h1>
-          <p className="order-id order-id--subtitle">#{pendingOrder.orderId}</p>
+          <h1>Processing Your Order...</h1>
+          <p className="order-id">#{pendingOrder.orderId}</p>
         </div>
 
         {waUrl && (
-          <div className="actions-column">
-            <button onClick={openWhatsApp} className="action-card action-card--wa animate-slide-up delay-1">
-              <div className="action-icon-wrapper action-icon-wrapper--wa">
-                <MessageCircle size="22" />
+          <div className="actions">
+            <button onClick={openWhatsApp} className="action-card wa-card">
+              <div className="action-icon">💬</div>
+              <div>
+                <h3>WhatsApp not open?</h3>
+                <p>Tap to re-send your order</p>
               </div>
-              <div className="action-content">
-                <h3 className="action-title">WhatsApp not open?</h3>
-                <p className="action-description">Tap to re-send your order</p>
-              </div>
-              <ArrowRight size="18" className="action-arrow-icon" />
+              <span className="action-arrow">→</span>
             </button>
           </div>
         )}
 
-        <div className="processing-note">
+        <div className="loading-note">
           <span className="dot-pulse" />
-          <span>Saving your order to our kitchen...</span>
+          Saving your order to our kitchen...
         </div>
         <ConfirmStyles />
       </div>
@@ -378,74 +332,54 @@ function ConfirmationContent() {
   if (orderState === 'failed') {
     return (
       <div className="confirm-page">
-        <div className="hero hero--partial-success animate-fade-in">
-          <div className="check-circle check-circle--success">
-            <CheckCircle size="32" />
+        <div className="success-hero">
+          <div className="check-circle" style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
           </div>
-          <h1 className="hero-title">Message Sent</h1>
-          <span className="badge badge--success">WhatsApp ✅</span>
+          <h1>Message Sent ✅</h1>
           <p className="order-id">#{pendingOrder?.orderId}</p>
         </div>
 
-        <div className="info-banner info-banner--warning animate-slide-up">
-          <div className="info-banner-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-          </div>
+        <div className="info-banner">
           <p>Your WhatsApp message was sent! We're having a brief delay saving to our system.</p>
         </div>
 
-        <div className="actions-column">
+        <div className="actions">
+          {/* Retry save to backend */}
           <button
             onClick={handleRetry}
-            className="action-card action-card--retry animate-slide-up delay-1"
+            className="action-card confirm-wa-card"
             disabled={retryState === 'retrying'}
           >
             {retryState === 'retrying' ? (
-              <>
-                <div className="action-icon-wrapper">
-                  <Loader2 size="20" className="spinner" />
-                </div>
-                <div className="action-content">
-                  <h3 className="action-title">Saving...</h3>
-                  <p className="action-description">Please wait</p>
-                </div>
-              </>
+              <><span className="btn-spinner" /> <span>Saving...</span></>
             ) : (
               <>
-                <div className="action-icon-wrapper action-icon-wrapper--retry">
-                  <RotateCcw size="20" />
-                </div>
-                <div className="action-content">
-                  <h3 className="action-title">Retry Save to Kitchen</h3>
-                  <p className="action-description">Re-send order details</p>
+                <div className="action-icon">🔄</div>
+                <div>
+                  <h3>Retry Save to Kitchen</h3>
+                  <p>Tap to re-send order details to our system</p>
                 </div>
               </>
             )}
           </button>
 
           {waUrl && (
-            <button onClick={openWhatsApp} className="action-card action-card--wa animate-slide-up delay-2">
-              <div className="action-icon-wrapper action-icon-wrapper--wa">
-                <MessageCircle size="22" />
+            <button onClick={openWhatsApp} className="action-card wa-card">
+              <div className="action-icon">💬</div>
+              <div>
+                <h3>Re-send on WhatsApp</h3>
+                <p>Opens WhatsApp with your order details</p>
               </div>
-              <div className="action-content">
-                <h3 className="action-title">Re-send on WhatsApp</h3>
-                <p className="action-description">Opens WhatsApp with order</p>
-              </div>
-              <ArrowRight size="18" className="action-arrow-icon" />
+              <span className="action-arrow">→</span>
             </button>
           )}
         </div>
 
-        <div className="footer-note animate-fade-in delay-3">
-          <Link href="/" className="back-link">
-            <ArrowRight size="16" className="back-link-icon" />
-            Back to Menu
-          </Link>
+        <div className="footer-note">
+          <Link href="/" className="back-link">← Back to Menu</Link>
         </div>
         <ConfirmStyles />
       </div>
@@ -455,31 +389,30 @@ function ConfirmationContent() {
   // ── SUCCESS STATE ──
   return (
     <div className="confirm-page">
-      <div className="hero animate-fade-in">
-        <div className="check-circle check-circle--success check-circle--large">
-          <CheckCircle size="40" />
+      <div className="success-hero">
+        <div className="check-circle">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
         </div>
-        <h1 className="hero-title">Order Confirmed!</h1>
-        <div className="order-badge">
-          <span className="order-id-label">Order #</span>
-          <span className="order-id-value">{orderId}</span>
-        </div>
+        <h1>Order Confirmed!</h1>
+        <p className="order-id">#{orderId}</p>
       </div>
 
-      <div className="actions-column">
+      <div className="actions">
         {/* WhatsApp Re-send */}
         {waUrl && (
-          <button onClick={openWhatsApp} className="action-card action-card--wa animate-slide-up delay-1">
-            <div className="action-icon-wrapper action-icon-wrapper--wa">
-              <MessageCircle size="22" />
-            </div>
-            <div className="action-content">
-              <h3 className="action-title">Send on WhatsApp</h3>
-              <p className="action-description">
-                {waSentState === 'done' ? 'Tap again if needed' : 'Open WhatsApp with order'}
+          <button onClick={openWhatsApp} className="action-card wa-card">
+            <div className="action-icon">💬</div>
+            <div>
+              <h3>Send Order on WhatsApp</h3>
+              <p>
+                {waSentState === 'done'
+                  ? 'Tap again if needed'
+                  : 'Tap to open WhatsApp with your order'}
               </p>
             </div>
-            <ArrowRight size="18" className="action-arrow-icon" />
+            <span className="action-arrow">→</span>
           </button>
         )}
 
@@ -487,92 +420,61 @@ function ConfirmationContent() {
         {waSentState !== 'done' ? (
           <button
             onClick={handleSentWhatsApp}
-            className="action-card action-card--confirmed animate-slide-up delay-2"
+            className="action-card confirm-wa-card"
             disabled={waSentState === 'sending'}
           >
             {waSentState === 'sending' ? (
-              <>
-                <div className="action-icon-wrapper">
-                  <Loader2 size="20" className="spinner" />
-                </div>
-                <div className="action-content">
-                  <h3 className="action-title">Confirming...</h3>
-                  <p className="action-description">Please wait</p>
-                </div>
-              </>
+              <><span className="btn-spinner" /> <span>Confirming...</span></>
             ) : (
               <>
-                <div className="action-icon-wrapper action-icon-wrapper--confirmed">
-                  <CheckCircle size="20" />
-                </div>
-                <div className="action-content">
-                  <h3 className="action-title">I&apos;ve Sent the Message</h3>
-                  <p className="action-description">Tap after sending on WhatsApp</p>
+                <div className="action-icon">✅</div>
+                <div>
+                  <h3>I&apos;ve Sent the Message</h3>
+                  <p>Tap after sending on WhatsApp</p>
                 </div>
               </>
             )}
           </button>
         ) : (
-          <div className="action-card action-card--done animate-slide-up delay-2">
-            <div className="action-icon-wrapper action-icon-wrapper--done">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-            </div>
-            <div className="action-content">
-              <h3 className="action-title">Order Received!</h3>
-              <p className="action-description">The kitchen will prepare your order</p>
+          <div className="action-card sent-done-card">
+            <div className="action-icon">🎉</div>
+            <div>
+              <h3>Order Confirmed!</h3>
+              <p>The kitchen will prepare your order soon</p>
             </div>
           </div>
         )}
 
         {/* UPI QR Code */}
         {upiQrUrl && (
-          <div className="action-card action-card--qr animate-slide-up delay-3">
-            <div className="qr-content">
-              <div className="qr-icon-wrapper">
-                <QrCode size="22" />
-              </div>
-              <div className="qr-info">
-                <h3 className="action-title">Pay via UPI</h3>
-                <p className="action-description">Scan with Google Pay, PhonePe</p>
-              </div>
-            </div>
+          <div className="action-card qr-card">
+            <h3>Pay via UPI</h3>
             <img src={upiQrUrl} alt="UPI QR Code" className="qr-img" />
+            <p className="qr-note">Scan with Google Pay, PhonePe, or any UPI app</p>
           </div>
         )}
 
-        {/* Razorpay Pay Now */}
+        {/* Razorpay Pay Now — only when link available */}
         {razorpayLink && (
-          <a href={razorpayLink} className="action-card action-card--pay animate-slide-up delay-3" target="_blank" rel="noreferrer">
-            <div className="action-icon-wrapper action-icon-wrapper--pay">
-              <CreditCard size="20" />
+          <a href={razorpayLink} className="action-card pay-card" target="_blank" rel="noreferrer">
+            <div className="action-icon">💳</div>
+            <div>
+              <h3>Pay Online</h3>
+              <p>Pay ₹{serverTotal || pendingOrder?.total || ''} securely via Razorpay</p>
             </div>
-            <div className="action-content">
-              <h3 className="action-title">Pay Online</h3>
-              <p className="action-description">Secure payment via Razorpay</p>
-              <span className="pay-amount">₹{serverTotal || pendingOrder?.total || ''}</span>
-            </div>
-            <ArrowRight size="18" className="action-arrow-icon" />
+            <span className="action-arrow">→</span>
           </a>
         )}
       </div>
 
       {/* Order Summary */}
       {pendingOrder && (
-        <div className="summary-section animate-slide-up delay-4">
-          <OrderSummaryCard order={pendingOrder} serverTotal={serverTotal} />
-        </div>
+        <OrderSummaryCard order={pendingOrder} serverTotal={serverTotal} />
       )}
 
-      <div className="footer-note animate-fade-in delay-5">
-        <p className="thank-you-text">
-          Thank you for choosing <strong>{storeData?.store?.name || 'us'}</strong>!
-        </p>
-        <Link href="/" className="back-link">
-          <ArrowRight size="16" className="back-link-icon" />
-          Back to Menu
-        </Link>
+      <div className="footer-note">
+        <p>Thank you for choosing <strong>{storeData?.store?.name || 'us'}</strong>!</p>
+        <Link href="/" className="back-link">← Back to Menu</Link>
       </div>
 
       <ConfirmStyles />
@@ -584,702 +486,115 @@ function ConfirmationContent() {
 function ConfirmStyles() {
   return (
     <style jsx>{`
-      .confirm-page {
-        max-width: 480px;
-        margin: 0 auto;
-        padding: var(--space-6);
-        min-height: 100vh;
-      }
+      .confirm-page { max-width: 480px; margin: 0 auto; padding: var(--space-6); }
+      .center-page { text-align: center; padding-top: 4rem; }
 
-      .confirm-page--empty {
-        padding-top: 6rem;
-        padding-bottom: 2rem;
-      }
-
-      /* Empty State */
-      .empty-state-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        padding: var(--space-8) var(--space-6);
-      }
-
-      .empty-icon {
-        width: 120px;
-        height: 120px;
-        background: color-mix(in srgb, var(--color-primary) 6%, transparent);
-        border-radius: var(--radius-full);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: var(--space-6);
-        color: var(--color-primary);
-        opacity: 0.8;
-      }
-
-      .empty-title {
-        font-family: var(--font-display);
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--color-text);
-        margin: 0 0 var(--space-3);
-      }
-
-      .empty-description {
-        font-family: var(--font-body);
-        font-size: 1rem;
-        color: var(--color-text-variant);
-        margin: 0 0 var(--space-6);
-        line-height: 1.6;
-      }
-
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--space-2);
-        padding: 12px 24px;
-        border-radius: var(--radius-lg);
-        font-family: var(--font-display);
-        font-weight: 600;
-        font-size: 0.95rem;
-        text-decoration: none;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        border: none;
-        cursor: pointer;
-      }
-
-      .btn-primary {
-        background: var(--color-primary);
-        color: white;
-        box-shadow: 0 4px 16px rgba(255, 82, 0, 0.25);
-      }
-
-      .btn-primary:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 24px rgba(255, 82, 0, 0.35);
-      }
-
-      /* Hero Section */
-      .hero {
-        text-align: center;
-        margin-bottom: var(--space-8);
-        padding-top: var(--space-6);
-      }
-
-      .hero--loading {
-        padding-top: var(--space-8);
-      }
-
-      .hero--partial-success {
-        padding-top: var(--space-4);
-      }
-
+      /* Hero */
+      .success-hero { text-align: center; margin-bottom: var(--space-6); }
       .check-circle {
-        width: 80px;
-        height: 80px;
+        width: 72px; height: 72px;
         border-radius: var(--radius-full);
-        background: linear-gradient(135deg, var(--color-primary), var(--color-primary-container));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto var(--space-5);
-        box-shadow: 0 12px 32px rgba(255, 82, 0, 0.2);
+        background: linear-gradient(135deg, var(--color-primary-dim, #ff8a50), var(--color-primary));
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto var(--space-4);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
+      .loading-circle { animation: none; background: var(--color-surface-container-low); }
+      h1 { font-family: var(--font-display); font-size: 1.6rem; margin-bottom: var(--space-1); }
+      .order-id { font-family: var(--font-body); color: var(--color-text-variant); font-weight: 600; font-size: 1rem; }
 
-      .check-circle--large {
-        width: 96px;
-        height: 96px;
-        box-shadow: 0 16px 40px rgba(255, 82, 0, 0.25);
-      }
+      /* Skeleton */
+      .skeleton { background: linear-gradient(90deg, var(--color-surface-container-low) 25%, var(--color-surface-container) 50%, var(--color-surface-container-low) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; display: block; }
+      @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-      .check-circle--loading {
-        background: var(--color-surface-container);
-        box-shadow: var(--shadow-ambient);
-      }
-
-      .check-circle--success {
-        background: linear-gradient(135deg, #16a34a, #22c55e);
-        box-shadow: 0 12px 32px rgba(34, 197, 94, 0.2);
-      }
-
+      /* Spinner */
       .spinner {
-        width: 36px;
-        height: 36px;
-        color: var(--color-primary);
-        animation: spin 1s linear infinite;
+        width: 28px; height: 28px;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        display: inline-block;
       }
+      .btn-spinner {
+        width: 16px; height: 16px;
+        border: 2px solid rgba(255,255,255,0.4);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        display: inline-block;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
 
-      .spinner--large {
-        width: 44px;
-        height: 44px;
-      }
-
-      .hero-title {
-        font-family: var(--font-display);
-        font-size: 1.75rem;
-        font-weight: 800;
-        color: var(--color-text);
-        margin: 0 0 var(--space-3);
-        letter-spacing: -0.02em;
-      }
-
-      .order-id {
-        font-family: var(--font-body);
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--color-text-variant);
-        margin: 0;
-        letter-spacing: 0.05em;
-      }
-
-      .order-id--subtitle {
-        margin-top: var(--space-1);
-      }
-
-      .order-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 16px;
-        background: var(--color-surface-container);
-        border-radius: var(--radius-full);
-        margin-top: var(--space-2);
-      }
-
-      .order-id-label {
-        font-family: var(--font-body);
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: var(--color-text-variant);
-      }
-
-      .order-id-value {
-        font-family: var(--font-display);
-        font-size: 1rem;
-        font-weight: 700;
-        color: var(--color-primary);
-        letter-spacing: 0.08em;
-      }
-
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        border-radius: var(--radius-full);
-        font-size: 0.8rem;
-        font-weight: 600;
-        margin-top: var(--space-3);
-      }
-
-      .badge--success {
-        background: rgba(34, 197, 94, 0.1);
-        color: #22c55e;
-      }
+      /* Dot pulse */
+      .loading-note { text-align: center; color: var(--color-text-variant); font-size: 0.85rem; margin-top: var(--space-4); }
+      .dot-pulse { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--color-primary); animation: pulse 1s infinite; margin-right: 6px; vertical-align: middle; }
+      @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
 
       /* Actions */
-      .actions-column {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-4);
-        margin-bottom: var(--space-6);
-      }
-
+      .actions { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-5); }
       .action-card {
-        display: flex;
-        align-items: center;
-        gap: var(--space-3);
-        padding: var(--space-4);
-        background: var(--color-surface-lowest);
+        display: flex; align-items: center; gap: var(--space-3);
+        padding: var(--space-4) var(--space-3);
+        background: var(--color-surface-lowest, #fff);
         border-radius: var(--radius-lg);
-        text-decoration: none;
-        color: var(--color-text);
-        border: none;
-        box-shadow: var(--shadow-ambient);
-        cursor: pointer;
-        width: 100%;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .action-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: var(--gradient-action, transparent);
-        opacity: 0;
-        transition: opacity 0.2s;
-      }
-
-      .action-card:hover:not(:disabled) {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 24px rgba(42, 46, 65, 0.1);
-      }
-
-      .action-card:hover::before {
-        opacity: 1;
-      }
-
-      .action-card:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-
-      .action-card:active:not(:disabled) {
-        transform: translateY(-1px);
-      }
-
-      .action-icon-wrapper {
-        width: 48px;
-        height: 48px;
-        border-radius: var(--radius-md);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        color: white;
-      }
-
-      .action-icon-wrapper--wa {
-        background: linear-gradient(135deg, #25D366, #20BA61);
-        box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25);
-      }
-
-      .action-icon-wrapper--confirmed {
-        background: linear-gradient(135deg, var(--color-primary), var(--color-primary-container));
-        box-shadow: 0 4px 12px rgba(255, 82, 0, 0.25);
-      }
-
-      .action-icon-wrapper--retry {
-        background: linear-gradient(135deg, #3b82f6, #6366f1);
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-      }
-
-      .action-icon-wrapper--pay {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
-      }
-
-      .action-icon-wrapper--done {
-        background: linear-gradient(135deg, #22c55e, #16a34a);
-        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
-      }
-
-      .action-icon-wrapper .spinner {
-        color: white;
-      }
-
-      .action-content {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .action-title {
-        font-family: var(--font-display);
-        font-size: 1rem;
-        font-weight: 700;
-        color: var(--color-text);
-        margin: 0 0 4px;
-        letter-spacing: -0.01em;
-      }
-
-      .action-description {
+        text-align: left; text-decoration: none;
+        color: var(--color-text); border: none;
+        box-shadow: var(--shadow-ambient, 0 2px 8px rgba(0,0,0,0.08));
+        cursor: pointer; width: 100%;
+        transition: transform 0.15s, box-shadow 0.15s;
         font-family: var(--font-body);
-        font-size: 0.85rem;
-        color: var(--color-text-variant);
-        margin: 0;
-        line-height: 1.4;
       }
+      .action-card:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+      .action-card:disabled { opacity: 0.7; cursor: not-allowed; }
+      .action-icon { font-size: 1.8rem; flex-shrink: 0; }
+      .action-card h3 { font-family: var(--font-display); font-size: 1rem; font-weight: 700; margin: 0 0 2px; }
+      .action-card p { font-size: 0.8rem; color: var(--color-text-variant); margin: 0; }
+      .action-arrow { margin-left: auto; font-size: 1.2rem; color: var(--color-primary); font-weight: 700; flex-shrink: 0; }
 
-      .action-arrow-icon {
-        color: var(--color-primary);
-        flex-shrink: 0;
-        transition: transform 0.2s;
-      }
-
-      .action-card:hover .action-arrow-icon {
-        transform: translateX(4px);
-      }
+      .wa-card { border-left: 4px solid #25D366; }
+      .pay-card { border-left: 4px solid #3b82f6; }
+      .confirm-wa-card { border-left: 4px solid var(--color-primary); }
+      .sent-done-card { border-left: 4px solid #22c55e; background: rgba(34, 197, 94, 0.05); cursor: default; }
+      .sent-done-card:hover { transform: none !important; }
 
       /* QR Card */
-      .qr-card {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .qr-content {
-        display: flex;
-        align-items: center;
-        gap: var(--space-3);
-        margin-bottom: var(--space-3);
-      }
-
-      .qr-icon-wrapper {
-        width: 48px;
-        height: 48px;
-        border-radius: var(--radius-md);
-        background: linear-gradient(135deg, #f59e0b, #eab308);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-
-      .qr-info {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .qr-img {
-        max-width: 200px;
-        width: 100%;
-        height: auto;
-        border-radius: var(--radius-md);
-        margin: 0 auto;
-        box-shadow: var(--shadow-ambient);
-      }
-
-      /* Pay Card */
-      .pay-amount {
-        font-family: var(--font-display);
-        font-size: 1.25rem;
-        font-weight: 800;
-        color: var(--color-primary);
-        margin-top: var(--space-1);
-      }
+      .qr-card { flex-direction: column; text-align: center; justify-content: center; }
+      .qr-card h3 { margin-bottom: var(--space-2); }
+      .qr-img { max-width: 200px; width: 100%; border-radius: var(--radius-md); margin: var(--space-2) 0; }
+      .qr-note { font-size: 0.8rem; opacity: 0.7; margin: 0 !important; }
 
       /* Info Banner */
-      .info-banner {
-        background: color-mix(in srgb, #22c55e 8%, transparent);
-        border: 1px solid color-mix(in srgb, #22c55e 20%, transparent);
-        border-radius: var(--radius-md);
-        padding: var(--space-4);
-        margin: 0 var(--space-6) var(--space-6);
-        display: flex;
-        align-items: flex-start;
-        gap: var(--space-3);
-      }
-
-      .info-banner--warning {
-        background: color-mix(in srgb, var(--color-warning) 8%, transparent);
-        border-color: color-mix(in srgb, var(--color-warning) 20%, transparent);
-      }
-
-      .info-banner-icon {
-        flex-shrink: 0;
-        color: var(--color-warning);
-        margin-top: 2px;
-      }
-
-      .info-banner p {
-        font-family: var(--font-body);
-        font-size: 0.9rem;
-        color: var(--color-text);
-        margin: 0;
-        line-height: 1.6;
-      }
-
-      /* Processing Note */
-      .processing-note {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--space-2);
-        color: var(--color-text-variant);
-        font-size: 0.85rem;
-        margin-top: var(--space-4);
-      }
+      .info-banner { background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4); }
+      .info-banner p { font-size: 0.9rem; color: var(--color-text); margin: 0; line-height: 1.5; }
 
       /* Order Summary */
-      .summary-section {
-        margin-bottom: var(--space-6);
-      }
-
-      .summary-card {
-        background: var(--color-surface-lowest);
-        border-radius: var(--radius-lg);
-        overflow: hidden;
-        box-shadow: var(--shadow-ambient);
-        border: 1px solid var(--color-border);
-      }
-
-      .summary-toggle {
-        display: flex;
-        align-items: center;
-        gap: var(--space-3);
-        width: 100%;
-        padding: var(--space-4);
-        background: transparent;
-        border: none;
-        font-family: var(--font-display);
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: var(--color-text);
-        cursor: pointer;
-        transition: background 0.2s;
-      }
-
-      .summary-toggle:hover {
-        background: color-mix(in srgb, var(--color-primary) 2%, transparent);
-      }
-
-      .summary-toggle-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: var(--radius-md);
-        background: color-mix(in srgb, var(--color-primary) 6%, transparent);
-        color: var(--color-primary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-
-      .summary-toggle-text {
-        flex: 1;
-        text-align: left;
-      }
-
-      .summary-toggle-title {
-        display: block;
-        font-weight: 700;
-      }
-
-      .summary-toggle-count {
-        display: block;
-        font-size: 0.75rem;
-        font-weight: 500;
-        color: var(--color-text-variant);
-        margin-top: 2px;
-      }
-
-      .summary-chevron {
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        color: var(--color-text-variant);
-      }
-
-      .summary-chevron.open {
-        transform: rotate(180deg);
-      }
-
-      .summary-body {
-        padding: 0 var(--space-4) var(--space-4);
-        border-top: 1px solid var(--color-border);
-        margin-top: 2px;
-      }
-
-      .summary-item {
-        padding: var(--space-2) 0;
-      }
-
-      .summary-item-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        margin-bottom: 2px;
-      }
-
-      .summary-item-name {
-        font-family: var(--font-body);
-        font-size: 0.9rem;
-        font-weight: 500;
-        color: var(--color-text);
-      }
-
-      .summary-item-qty {
-        font-family: var(--font-display);
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--color-text-variant);
-      }
-
-      .summary-item-price {
-        font-family: var(--font-display);
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: var(--color-text);
-        margin-left: auto;
-        width: fit-content;
-      }
-
-      .summary-addon {
-        display: flex;
-        gap: 6px;
-        font-size: 0.8rem;
-        color: var(--color-text-variant);
-        margin-top: 4px;
-        padding-left: 0;
-        align-items: baseline;
-      }
-
-      .addon-plus {
-        color: var(--color-text-variant);
-        opacity: 0.6;
-      }
-
-      .addon-name {
-        flex: 1;
-      }
-
-      .addon-price {
-        font-weight: 500;
-        color: var(--color-text-variant);
-      }
-
-      .summary-divider {
-        height: 1px;
-        background: var(--color-border);
-        margin: var(--space-3) 0;
-      }
-
-      .summary-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        padding: var(--space-1) 0;
-      }
-
-      .summary-label {
-        font-family: var(--font-body);
-        font-size: 0.85rem;
-        color: var(--color-text-variant);
-      }
-
-      .summary-value {
-        font-family: var(--font-display);
-        font-size: 0.88rem;
-        font-weight: 600;
-        color: var(--color-text);
-      }
-
-      .summary-row-discount .text-success {
-        color: #22c55e;
-      }
-
-      .discount-code {
-        font-size: 0.75rem;
-        font-weight: 500;
-        opacity: 0.8;
-      }
-
-      .summary-row-total {
-        padding: var(--space-2) 0 0;
-        margin-top: var(--space-2);
-        border-top: 2px solid var(--color-border);
-      }
-
-      .summary-label-total {
-        font-family: var(--font-display);
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: var(--color-text);
-      }
-
-      .summary-value-total {
-        font-family: var(--font-display);
-        font-size: 1.2rem;
-        font-weight: 800;
-        color: var(--color-primary);
-      }
-
-      .summary-adjusted {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 0.75rem;
-        color: var(--color-primary);
-        margin-top: var(--space-2);
-        padding: var(--space-1) var(--space-2);
-        background: color-mix(in srgb, var(--color-primary) 5%, transparent);
-        border-radius: var(--radius-sm);
-        font-weight: 500;
-      }
-
-      .summary-meta {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.82rem;
-        color: var(--color-text-variant);
-        margin-top: var(--space-2);
-      }
+      .summary-card { background: var(--color-surface-lowest, #fff); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-5); box-shadow: var(--shadow-ambient, 0 2px 8px rgba(0,0,0,0.06)); }
+      .summary-toggle { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: var(--space-4); background: none; border: none; font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; color: var(--color-text); cursor: pointer; }
+      .summary-chevron { font-size: 0.75rem; color: var(--color-text-variant); }
+      .summary-body { padding: 0 var(--space-4) var(--space-4); }
+      .summary-item { margin-bottom: var(--space-2); }
+      .summary-item-row { display: flex; justify-content: space-between; font-size: 0.9rem; }
+      .summary-addon { font-size: 0.78rem; color: var(--color-text-variant); padding-left: 1rem; margin-top: 2px; }
+      .summary-divider { height: 1px; background: var(--color-outline-variant); margin: var(--space-2) 0; }
+      .summary-row { display: flex; justify-content: space-between; font-size: 0.88rem; padding: 2px 0; color: var(--color-text-variant); }
+      .summary-row.discount { color: #22c55e; }
+      .total-row { font-family: var(--font-display); font-weight: 700; color: var(--color-text); font-size: 1rem; margin-top: var(--space-1); }
+      .total-adjusted { font-size: 0.75rem; color: var(--color-primary); margin: var(--space-1) 0 0; text-align: right; }
+      .summary-meta { font-size: 0.82rem; color: var(--color-text-variant); margin: var(--space-2) 0 0; }
 
       /* Footer */
-      .footer-note {
-        text-align: center;
-        margin-top: var(--space-8);
-        padding: var(--space-4) 0;
-        border-top: 1px solid var(--color-border);
-      }
+      .footer-note { text-align: center; margin-top: var(--space-3); }
+      .footer-note p { font-size: 1rem; margin-bottom: var(--space-3); }
+      .back-link { color: var(--color-primary); font-weight: 600; text-decoration: none; }
+      .back-link-btn { display: inline-block; padding: 12px 24px; background: var(--color-primary); color: white; border-radius: var(--radius-lg); font-weight: 600; text-decoration: none; }
 
-      .thank-you-text {
-        font-family: var(--font-body);
-        font-size: 1rem;
-        color: var(--color-text-variant);
-        margin: 0 0 var(--space-4);
-      }
-
-      .thank-you-text strong {
-        color: var(--color-text);
-        font-weight: 600;
-      }
-
-      .back-link {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2);
-        color: var(--color-primary);
-        font-family: var(--font-display);
-        font-weight: 600;
-        text-decoration: none;
-        font-size: 0.95rem;
-        transition: gap 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-
-      .back-link:hover {
-        gap: var(--space-3);
-      }
-
-      .back-link-icon {
-        transition: transform 0.2s;
-      }
-
-      .back-link:hover .back-link-icon {
-        transform: translateX(-2px);
-      }
-
-      /* Skeleton shimmer */
-      .skeleton {
-        background: linear-gradient(
-          90deg,
-          var(--color-surface-container-low) 25%,
-          var(--color-surface-container) 50%,
-          var(--color-surface-container-low) 75%
-        );
-        background-size: 200% 100%;
-        animation: shimmer 1.4s infinite;
-        display: block;
-      }
-
-      @keyframes shimmer {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
-      }
-
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-
-      @keyframes pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.5; transform: scale(0.9); }
+      @keyframes pop {
+        0% { transform: scale(0.3); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
       }
     `}</style>
   );
