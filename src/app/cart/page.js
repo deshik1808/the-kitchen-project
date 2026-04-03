@@ -317,7 +317,7 @@ export default function CartPage() {
       <div className="top-card">
       <div className="page-top">
         <Link href="/" className="back-arrow">
-          <CircleArrowLeft size={22} strokeWidth={1.5} color="#484848" />
+          <CircleArrowLeft size={26} strokeWidth={1.5} color="#484848" />
         </Link>
         <h1>Your Cart</h1>
         <div className="top-spacer"></div>
@@ -340,7 +340,7 @@ export default function CartPage() {
 
       {orderType === 'delivery' && (
         <div className="delivery-banner">
-          <MapPin size={20} strokeWidth={1.5} style={{color: 'var(--color-primary)', flexShrink: 0}} />
+          <MapPin size={24} strokeWidth={1.5} style={{color: 'var(--color-primary)', flexShrink: 0}} />
           <div className="delivery-info">
             {deliveryAddress ? (
               <>
@@ -438,7 +438,7 @@ export default function CartPage() {
       {orderType === 'pickup' && (
         <div className="pickup-banner">
           <div className="pickup-icon">
-            <MapPinned size={20} strokeWidth={1.5} style={{color: 'var(--color-primary)'}} />
+            <MapPinned size={24} strokeWidth={1.5} style={{color: 'var(--color-primary)'}} />
           </div>
           <div className="pickup-info">
             <p className="pickup-label">Pickup your order from here</p>
@@ -552,7 +552,7 @@ export default function CartPage() {
 
       <button className="promo-card" onClick={() => { setShowPromoSheet(true); setPromoStatus(null); setPromoError(''); }}>
         <div className="promo-icon-wrap">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide-ticket-percent">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="lucide-ticket-percent">
             <path d="M2 9a3 3 0 1 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
             <path d="M9 9h.01"/>
             <path d="m15 9-6 6"/>
@@ -1007,7 +1007,7 @@ export default function CartPage() {
         .qty-btn.plus { background: transparent; color: var(--color-primary); }
         .qty-val { color: #1a1a1a; font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; min-width: 22px; text-align: center; }
         
-        .summary-card { background: var(--color-surface-lowest); border-radius: var(--radius-lg); padding: 0 var(--space-3) var(--space-1); margin-top: var(--space-2); box-shadow: var(--shadow-ambient); }
+        .summary-card { background: var(--color-surface-lowest); border-radius: var(--radius-lg); padding: 0 var(--space-3) var(--space-1); margin-top: var(--space-4); box-shadow: var(--shadow-ambient); }
         .bill-details-title { font-family: var(--font-display); font-size: 0.82rem; font-weight: 600; color: var(--color-text); margin: 0; padding: var(--space-2) 0 0; }
 
         .promo-card {
@@ -1029,19 +1029,19 @@ export default function CartPage() {
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
-          width: 36px;
-          height: 36px;
+          width: 44px;
+          height: 44px;
           background: transparent;
           border-radius: 50%;
         }
         .promo-icon-wrap img {
-          width: 24px;
-          height: 24px;
+          width: 28px;
+          height: 28px;
           filter: none;
         }
         .promo-icon-wrap svg {
-          width: 24px;
-          height: 24px;
+          width: 28px;
+          height: 28px;
           color: var(--color-primary);
         }
         .promo-card-label {
