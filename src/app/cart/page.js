@@ -1181,6 +1181,7 @@ export default function CartPage() {
           display: flex;
           flex-direction: column;
           gap: var(--space-2);
+          margin-top: var(--space-3);
         }
         .promo-empty-state {
           display: flex;
