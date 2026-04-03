@@ -138,7 +138,6 @@ function OrderSummary({ order, serverTotal, orderId }) {
           letter-spacing: 0.06em;
           text-transform: uppercase;
           padding: 0.3rem 1.15rem 0.55rem;
-          border-bottom: 1.5px dashed #d1d5db;
         }
       `}</style>
       <div className="bill-header">
@@ -223,6 +222,7 @@ export default function ConfirmationPage() {
 
   // Run ONCE on mount
   useEffect(() => {
+    window.scrollTo(0, 0);
     let cancelled = false;
     const VER = 'v1';
 
