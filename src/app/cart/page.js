@@ -118,7 +118,7 @@ const SwipeButton = ({ onConfirm, disabled }) => {
           style={{ width: `calc(${thumbLeft}px + 50px)` }}
         />
         <div className="swipe-text" style={{ opacity: Math.max(0, 1 - (thumbLeft / 150)) }}>
-          Slide to Order
+          Slide To Order
         </div>
         <div className="swipe-text-wa">WhatsApp</div>
         <div 
@@ -186,76 +186,93 @@ const SwipeButton = ({ onConfirm, disabled }) => {
         .swipe-container {
           position: relative;
           width: 100%;
-          height: 64px;
-          background: var(--color-surface-container, #f3f4f6);
-          border: 1px solid var(--color-surface-container-high, #e5e7eb);
-          border-radius: 999px;
+          height: 56px;
+          background: #f8f7ff;
+          border: none;
+          border-radius: 14px;
           overflow: hidden;
           display: flex;
           align-items: center;
-          box-shadow: inset 0 2px 6px rgba(0,0,0,0.04);
+          box-shadow: inset 4px 4px 10px rgba(0,0,0,0.08), inset -2px -2px 8px rgba(255,255,255,0.95);
           user-select: none;
-          touch-action: none; /* Helps prevent scroll when sliding */
+          touch-action: none;
         }
         .swipe-track-fill {
           position: absolute;
           left: 0;
           top: 0;
           bottom: 0;
-          background: color-mix(in srgb, var(--color-primary) 15%, transparent);
-          border-radius: 999px 0 0 999px;
+          background: linear-gradient(to right, color-mix(in srgb, var(--color-primary) 18%, transparent), color-mix(in srgb, var(--color-primary) 5%, transparent));
+          border-radius: 14px 0 0 14px;
         }
         .swipe-text {
           position: absolute;
-          width: 100%;
+          left: 0;
+          right: 110px;
           text-align: center;
           font-family: var(--font-display);
-          font-size: 1.05rem;
-          font-weight: 700;
+          font-size: 0.82rem;
+          font-weight: 500;
           color: var(--color-text-variant);
           pointer-events: none;
           z-index: 1;
-          padding-left: 10px;
-          letter-spacing: 0.01em;
+          padding-left: 82px;
+          letter-spacing: 0.06em;
+          white-space: nowrap;
+          overflow: hidden;
         }
         .swipe-text-wa {
           position: absolute;
-          right: 24px;
+          right: 20px;
+          width: 90px;
+          text-align: right;
           font-family: var(--font-display);
-          font-size: 0.88rem;
-          font-weight: 700;
+          font-size: 0.82rem;
+          font-weight: 500;
           color: #25D366;
-          opacity: 0.85;
+          opacity: 0.9;
           pointer-events: none;
+          letter-spacing: 0.02em;
+          white-space: nowrap;
         }
         .swipe-thumb {
           position: absolute;
-          left: 6px;
-          width: 52px;
-          height: 52px;
-          border-radius: 50%;
-          background: var(--color-primary);
+          left: 5px;
+          width: 70px;
+          height: 46px;
+          border-radius: 10px;
+          background: linear-gradient(145deg, var(--color-primary-container) 0%, var(--color-primary) 50%, var(--color-primary-dim) 100%);
           color: white;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+          box-shadow:
+            0 6px 20px color-mix(in srgb, var(--color-primary) 45%, transparent),
+            0 2px 6px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
           cursor: grab;
           z-index: 2;
-          transition: transform 0.15s linear, background-color 0.3s;
+          transition: transform 0.15s linear, background 0.3s, box-shadow 0.3s;
         }
         .swipe-thumb:active {
           cursor: grabbing;
         }
         .swipe-thumb.dragging {
-          transition: none; /* 1:1 follow */
+          transition: none;
+          box-shadow:
+            0 8px 28px color-mix(in srgb, var(--color-primary) 55%, transparent),
+            0 4px 8px rgba(0, 0, 0, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
         .swipe-thumb:not(.dragging) {
-          transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s, box-shadow 0.3s;
         }
         .swipe-thumb.complete {
-          background: #25D366;
-          box-shadow: 0 0 20px rgba(37, 211, 102, 0.4);
+          background: linear-gradient(145deg, #2EE072 0%, #25D366 50%, #1aad54 100%);
+          box-shadow:
+            0 6px 24px rgba(37, 211, 102, 0.5),
+            0 2px 6px rgba(0, 0, 0, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
       `}</style>
     </div>
