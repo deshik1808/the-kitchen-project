@@ -548,6 +548,8 @@ export default function CartPage() {
         )}
       </div>
 
+      <div className="section-label">SAVINGS CORNER</div>
+
       <button className="promo-card" onClick={() => { setShowPromoSheet(true); setPromoStatus(null); setPromoError(''); }}>
         <div className="promo-icon-wrap">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide-ticket-percent">
@@ -905,7 +907,7 @@ export default function CartPage() {
           text-decoration: underline;
           white-space: nowrap;
         }
-        .section-label { font-size: 0.7rem; font-weight: 500; color: var(--color-text-variant); letter-spacing: 0.1em; margin-top: var(--space-2); }
+        .section-label { font-size: 0.72rem; font-weight: 500; color: var(--color-text-variant); letter-spacing: 0.12em; margin-top: var(--space-5); margin-bottom: var(--space-2); }
         .section-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; margin-bottom: var(--space-4); }
         
         .cart-items {
@@ -1027,19 +1029,19 @@ export default function CartPage() {
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
-          width: 32px;
-          height: 32px;
+          width: 36px;
+          height: 36px;
           background: transparent;
           border-radius: 50%;
         }
         .promo-icon-wrap img {
-          width: 22px;
-          height: 22px;
+          width: 24px;
+          height: 24px;
           filter: none;
         }
         .promo-icon-wrap svg {
-          width: 22px;
-          height: 22px;
+          width: 24px;
+          height: 24px;
           color: var(--color-primary);
         }
         .promo-card-label {
