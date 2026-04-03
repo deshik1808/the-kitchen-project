@@ -550,11 +550,11 @@ export default function CartPage() {
 
       <button className="promo-card" onClick={() => { setShowPromoSheet(true); setPromoStatus(null); setPromoError(''); }}>
         <div className="promo-icon-wrap">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 3 L20 3 Q21 3 21 4 L21 10 A2 2 0 0 0 21 14 L21 20 Q21 21 20 21 L4 21 Q3 21 3 20 L3 14 A2 2 0 0 0 3 10 L3 4 Q3 3 4 3 Z"/>
-            <line x1="9" y1="15" x2="15" y2="9" strokeWidth="1.6"/>
-            <circle cx="9.5" cy="9.5" r="1.15" fill="none" stroke="var(--color-primary)" strokeWidth="1.6"/>
-            <circle cx="14.5" cy="14.5" r="1.15" fill="none" stroke="var(--color-primary)" strokeWidth="1.6"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide-ticket-percent">
+            <path d="M2 9a3 3 0 1 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
+            <path d="M9 9h.01"/>
+            <path d="m15 9-6 6"/>
+            <path d="M15 15h.01"/>
           </svg>
         </div>
         {appliedPromo ? (
@@ -631,11 +631,11 @@ export default function CartPage() {
                   <div key={i} className={`promo-coupon-card${appliedPromo?.code === d.code ? ' applied' : ''}`}>
                     <div className="promo-coupon-left">
                       <div className="promo-coupon-top-row">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M4 3 L20 3 Q21 3 21 4 L21 10 A2 2 0 0 0 21 14 L21 20 Q21 21 20 21 L4 21 Q3 21 3 20 L3 14 A2 2 0 0 0 3 10 L3 4 Q3 3 4 3 Z"/>
-                          <line x1="9" y1="15" x2="15" y2="9" strokeWidth="1.6"/>
-                          <circle cx="9.5" cy="9.5" r="1.15" fill="none" stroke="var(--color-primary)" strokeWidth="1.6"/>
-                          <circle cx="14.5" cy="14.5" r="1.15" fill="none" stroke="var(--color-primary)" strokeWidth="1.6"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide-ticket-percent">
+                          <path d="M2 9a3 3 0 1 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
+                          <path d="M9 9h.01"/>
+                          <path d="m15 9-6 6"/>
+                          <path d="M15 15h.01"/>
                         </svg>
                         <span className="promo-coupon-code">{d.code}</span>
                       </div>
@@ -707,11 +707,11 @@ export default function CartPage() {
       )}
 
       <style jsx>{`
-        .cart-page { max-width: 480px; margin: 0 auto; padding: 0 var(--space-6) var(--space-4); }
+        .cart-page { max-width: 480px; margin: 0 auto; padding: 0 16px var(--space-4); }
         .top-card {
           background: var(--color-surface-lowest);
-          margin: 0 calc(-1 * var(--space-6)) var(--space-3);
-          padding: 0 var(--space-6) var(--space-1);
+          margin: 0 -16px var(--space-3);
+          padding: 0 16px var(--space-1);
           box-shadow: 0 2px 8px rgba(0,0,0,0.06);
           border-radius: 0 0 var(--radius-lg) var(--radius-lg);
         }
@@ -767,7 +767,7 @@ export default function CartPage() {
           overflow-y: auto;
           background: #fff;
           border-radius: 20px 20px 0 0;
-          padding: var(--space-4) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
+          padding: 12px 16px calc(var(--space-4) + env(safe-area-inset-bottom));
           animation: sheetUp 0.3s cubic-bezier(0.16,1,0.3,1);
         }
         @keyframes sheetUp {
@@ -778,15 +778,15 @@ export default function CartPage() {
           display: flex;
           align-items: center;
           gap: var(--space-3);
-          margin-bottom: var(--space-4);
+          margin-bottom: 12px;
         }
         .addr-back { background: none; border: none; padding: 0; cursor: pointer; display: flex; }
-        .addr-title { font-family: var(--font-display); font-size: 1.05rem; font-weight: 500; }
-        .addr-section-label { font-size: 0.7rem; font-weight: 500; color: var(--color-text-variant); letter-spacing: 0.1em; margin-bottom: var(--space-3); }
-        .addr-type-row { display: flex; gap: var(--space-2); margin-bottom: var(--space-5); }
+        .addr-title { font-family: var(--font-display); font-size: 0.92rem; font-weight: 500; }
+        .addr-section-label { font-size: 0.7rem; font-weight: 500; color: var(--color-text-variant); letter-spacing: 0.1em; margin-bottom: var(--space-2); }
+        .addr-type-row { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); }
         .addr-type-btn {
           flex: 1;
-          padding: 10px 0;
+          padding: 8px 0;
           border-radius: var(--radius-full);
           border: 1.5px solid var(--color-outline-variant);
           background: transparent;
@@ -804,7 +804,7 @@ export default function CartPage() {
           font-weight: 500;
         }
         .addr-fields { display: flex; flex-direction: column; }
-        .addr-field { padding: var(--space-3) 0; border-bottom: 1px solid var(--color-outline-variant); transition: border-color 0.2s; }
+        .addr-field { padding: 8px 0; border-bottom: 1px solid var(--color-outline-variant); transition: border-color 0.2s; }
         .addr-field:last-child { border-bottom: none; }
         .addr-field:focus-within { border-bottom-color: #484848; }
         .addr-field.error { border-bottom-color: #e53935; }
@@ -824,20 +824,20 @@ export default function CartPage() {
           outline: none;
           background: transparent;
           font-family: var(--font-display);
-          font-size: 0.95rem;
+          font-size: 0.88rem;
           color: var(--color-text);
         }
         .addr-field-input::placeholder { color: var(--color-outline-variant); }
         .addr-save-btn {
           width: 100%;
-          margin-top: var(--space-5);
-          padding: 16px;
+          margin-top: var(--space-3);
+          padding: 12px;
           border: none;
           border-radius: var(--radius-lg);
           background: var(--color-primary);
           color: #fff;
           font-family: var(--font-display);
-          font-size: 1rem;
+          font-size: 0.9rem;
           font-weight: 500;
           cursor: pointer;
           transition: opacity 0.2s;
@@ -1006,7 +1006,7 @@ export default function CartPage() {
         .qty-val { color: #1a1a1a; font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; min-width: 22px; text-align: center; }
         
         .summary-card { background: var(--color-surface-lowest); border-radius: var(--radius-lg); padding: 0 var(--space-3) var(--space-1); margin-top: var(--space-2); box-shadow: var(--shadow-ambient); }
-        .bill-details-title { font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--color-text); margin: 0; padding: var(--space-2) 0 0; }
+        .bill-details-title { font-family: var(--font-display); font-size: 0.82rem; font-weight: 600; color: var(--color-text); margin: 0; padding: var(--space-2) 0 0; }
 
         .promo-card {
           display: flex;
@@ -1014,10 +1014,10 @@ export default function CartPage() {
           gap: var(--space-3);
           width: 100%;
           margin-top: var(--space-2);
-          padding: 10px var(--space-3);
-          background: var(--color-surface-lowest);
+          padding: 12px var(--space-3);
+          background: #fff;
           border: none;
-          border-radius: var(--radius-lg);
+          border-radius: 20px;
           box-shadow: var(--shadow-ambient);
           cursor: pointer;
           text-align: left;
@@ -1027,6 +1027,20 @@ export default function CartPage() {
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+          width: 32px;
+          height: 32px;
+          background: transparent;
+          border-radius: 50%;
+        }
+        .promo-icon-wrap img {
+          width: 22px;
+          height: 22px;
+          filter: none;
+        }
+        .promo-icon-wrap svg {
+          width: 22px;
+          height: 22px;
+          color: var(--color-primary);
         }
         .promo-card-label {
           flex: 1;
@@ -1054,7 +1068,7 @@ export default function CartPage() {
           font-weight: 600;
           color: var(--color-text);
         }
-        .promo-chevron { flex-shrink: 0; }
+        .promo-chevron { flex-shrink: 0; stroke-width: 3; }
 
         .promo-fullscreen {
           position: fixed;
@@ -1075,7 +1089,7 @@ export default function CartPage() {
           display: flex;
           align-items: center;
           gap: var(--space-3);
-          padding: var(--space-3) var(--space-4);
+          padding: 8px 12px;
           background: #fff;
           box-shadow: 0 2px 8px rgba(0,0,0,0.06);
           flex-shrink: 0;
@@ -1096,7 +1110,7 @@ export default function CartPage() {
         }
         .promo-fs-title {
           font-family: var(--font-display);
-          font-size: 1rem;
+          font-size: 0.92rem;
           font-weight: 600;
           color: var(--color-text);
         }
@@ -1107,10 +1121,10 @@ export default function CartPage() {
         .promo-fs-body {
           flex: 1;
           overflow-y: auto;
-          padding: var(--space-4);
+          padding: 12px;
           display: flex;
           flex-direction: column;
-          gap: var(--space-3);
+          gap: var(--space-2);
         }
         .promo-fs-input-row {
           display: flex;
@@ -1129,11 +1143,11 @@ export default function CartPage() {
         .promo-fs-input {
           flex: 1;
           min-width: 0;
-          padding: 14px var(--space-4);
+          padding: 10px 12px;
           border: none;
           outline: none;
           font-family: var(--font-display);
-          font-size: 0.95rem;
+          font-size: 0.9rem;
           font-weight: 600;
           letter-spacing: 0.06em;
           color: var(--color-text);
@@ -1164,7 +1178,7 @@ export default function CartPage() {
         .promo-fs-list {
           display: flex;
           flex-direction: column;
-          gap: var(--space-3);
+          gap: var(--space-2);
         }
         .promo-empty-state {
           display: flex;
@@ -1179,7 +1193,7 @@ export default function CartPage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 14px var(--space-4);
+          padding: 10px 12px;
           background: #fff;
           border-radius: var(--radius-lg);
           border: 1.5px dashed var(--color-outline-variant);
@@ -1294,16 +1308,16 @@ export default function CartPage() {
           padding: 13px;
           border: none;
           border-radius: var(--radius-lg);
-          background: #25D366;
+          background: #25D266;
           color: #fff;
           font-family: var(--font-display);
           font-weight: 600;
           font-size: 1.05rem;
           cursor: pointer;
-          box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);
+          box-shadow: 0 4px 16px rgba(37, 210, 102, 0.3);
           transition: transform 0.15s, box-shadow 0.15s;
         }
-        .wa-order-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4); }
+        .wa-order-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37, 210, 102, 0.4); }
         .wa-order-btn:active { transform: translateY(0); }
         .wa-order-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .wa-icon { flex-shrink: 0; }
