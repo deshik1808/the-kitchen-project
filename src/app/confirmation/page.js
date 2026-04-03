@@ -347,10 +347,13 @@ export default function ConfirmationPage() {
       {/* ── EMPTY ───────────────────────────────────────────────── */}
       {isEmpty && (
         <div className="empty-state">
-          <span className="empty-icon">🔍</span>
-          <h2>No Recent Order</h2>
-          <p>It looks like you haven&apos;t placed an order yet.</p>
-          <Link href="/" className="browse-btn">Browse Menu →</Link>
+          <div className="empty-icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="lucide-binoculars">
+              <path d="M10 10h4"/><path d="M19 7V4a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3"/><path d="M20 21a2 2 0 0 0 2-2v-3.851c0-1.39-2-2.962-2-4.829V8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2z"/><path d="M 22 16 L 2 16"/><path d="M4 21a2 2 0 0 1-2-2v-3.851c0-1.39 2-2.962 2-4.829V8a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v11a2 2 0 0 1-2 2z"/><path d="M9 7V4a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v3"/>
+            </svg>
+          </div>
+          <h2 className="empty-title">No Recent Order</h2>
+          <Link href="/" className="order-now-btn">Order Now</Link>
         </div>
       )}
 
@@ -744,12 +747,60 @@ export default function ConfirmationPage() {
         .back-link:hover { gap: 0.4rem; }
 
         /* Empty State */
-        .empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 5rem 2rem 3rem; gap: 0.75rem; }
-        .empty-icon { font-size: 3.5rem; }
-        .empty-state h2 { font-family: var(--font-display); font-size: 1.4rem; color: var(--color-text); margin: 0; }
-        .empty-state p { font-size: 0.9rem; color: var(--color-text-variant); max-width: 260px; line-height: 1.55; margin: 0; }
-        .browse-btn { display: inline-block; margin-top: 0.5rem; padding: 0.75rem 1.75rem; background: var(--color-primary); color: white; border-radius: 9999px; font-weight: 700; font-size: 0.95rem; text-decoration: none; box-shadow: 0 4px 18px rgba(0,0,0,0.15); transition: transform 0.18s, box-shadow 0.18s; }
-        .browse-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 26px rgba(0,0,0,0.2); }
+        .empty-state { 
+          display: flex; 
+          flex-direction: column; 
+          align-items: center; 
+          justify-content: center; 
+          text-align: center; 
+          padding: 80px 24px; 
+          min-height: 50vh;
+        }
+        .empty-icon-wrapper { 
+          width: 140px;
+          height: 140px;
+          background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 24px;
+          position: relative;
+        }
+        .empty-icon-wrapper::before,
+        .empty-icon-wrapper::after {
+          content: '+';
+          position: absolute;
+          color: var(--color-outline-variant);
+          font-size: 1.2rem;
+          line-height: 1;
+        }
+        .empty-icon-wrapper::before { top: 25%; left: 18%; }
+        .empty-icon-wrapper::after { bottom: 30%; right: 18%; }
+        .empty-title { 
+          font-family: var(--font-display); 
+          font-size: 1.15rem;
+          font-weight: 400;
+          color: var(--color-text); 
+          margin-bottom: 24px; 
+        }
+        :global(.order-now-btn) { 
+          display: inline-block; 
+          padding: 10px 24px; 
+          background-color: var(--color-primary) !important; 
+          color: #ffffff !important; 
+          border-radius: var(--radius-sm); 
+          font-weight: 500; 
+          font-size: 0.85rem;
+          font-family: var(--font-display); 
+          text-decoration: none;
+          transition: all 0.2s;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        :global(.order-now-btn:active) {
+          transform: scale(0.96);
+          opacity: 0.9;
+        }
 
         /* Reduced motion */
         @media (prefers-reduced-motion: reduce) {

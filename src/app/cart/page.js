@@ -15,17 +15,47 @@ const SwipeButton = ({ onConfirm, disabled }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [thumbLeft, setThumbLeft] = useState(0);
+  
   const containerRef = useRef(null);
   const thumbRef = useRef(null);
+
+  // Use refs to access latest state inside event listeners without rebinding
+  const stateRef = useRef({ isDragging, isComplete, thumbLeft, disabled });
+  stateRef.current = { isDragging, isComplete, thumbLeft, disabled };
+  
+  const onConfirmRef = useRef(onConfirm);
+  onConfirmRef.current = onConfirm;
 
   const startDrag = (e) => {
     if (disabled || isComplete) return;
     setIsDragging(true);
   };
 
+  const handleEnd = () => {
+    if (!stateRef.current.isDragging) return;
+    setIsDragging(false);
+    
+    if (!containerRef.current || !thumbRef.current) return;
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const thumbWidth = thumbRef.current.offsetWidth;
+    const maxLeft = containerRect.width - thumbWidth - 12;
+
+    // Trigger confirm ONLY on touch-end/mouse-up to bypass browser popup blockers
+    if (stateRef.current.thumbLeft >= maxLeft * 0.90) {
+      setThumbLeft(maxLeft);
+      setIsComplete(true);
+      // Call the parent handler (which opens WA and navigates)
+      onConfirmRef.current();
+    } else {
+      // Snap back to 0 if they didn't reach 90%
+      setThumbLeft(0);
+      setIsComplete(false);
+    }
+  };
+
   useEffect(() => {
     const handleMove = (e) => {
-      if (!isDragging || !containerRef.current || !thumbRef.current) return;
+      if (!stateRef.current.isDragging || !containerRef.current || !thumbRef.current) return;
       
       const containerRect = containerRef.current.getBoundingClientRect();
       const thumbWidth = thumbRef.current.offsetWidth;
@@ -43,48 +73,38 @@ const SwipeButton = ({ onConfirm, disabled }) => {
       let newLeft = clientX - containerRect.left - (thumbWidth / 2);
       
       if (newLeft < 0) newLeft = 0;
-      if (newLeft > maxLeft) {
+      
+      // Visual snap when crossing 90%
+      if (newLeft >= maxLeft * 0.90) {
         newLeft = maxLeft;
-        setIsComplete(true);
-        setIsDragging(false);
-        onConfirm();
+        if (!stateRef.current.isComplete) setIsComplete(true);
+      } else {
+        if (stateRef.current.isComplete) setIsComplete(false);
       }
       
       setThumbLeft(newLeft);
     };
 
-    const handleEnd = () => {
-      if (!isDragging) return;
-      setIsDragging(false);
-      
-      if (!isComplete) {
-        // Snap back if not complete
-        setThumbLeft(0);
-      }
-    };
-
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMove, { passive: false });
-      window.addEventListener('touchmove', handleMove, { passive: false });
-      window.addEventListener('mouseup', handleEnd);
-      window.addEventListener('touchend', handleEnd);
-    }
+    window.addEventListener('mousemove', handleMove, { passive: false });
+    window.addEventListener('touchmove', handleMove, { passive: false });
+    
+    // Fallbacks for mouseup outside the element
+    window.addEventListener('mouseup', handleEnd);
 
     return () => {
       window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('touchmove', handleMove);
       window.removeEventListener('mouseup', handleEnd);
-      window.removeEventListener('touchend', handleEnd);
     };
-  }, [isDragging, isComplete, onConfirm, disabled]);
+  }, []);
 
   // Reset if disabled toggles to false (e.g. they came back from WA or error)
   useEffect(() => {
-    if (disabled === false && isComplete) {
+    if (disabled === false && isComplete && !isDragging) {
       setIsComplete(false);
       setThumbLeft(0);
     }
-  }, [disabled, isComplete]);
+  }, [disabled, isComplete, isDragging]);
 
   return (
     <div className={`swipe-wrapper ${disabled ? 'disabled' : ''}`}>
@@ -95,18 +115,20 @@ const SwipeButton = ({ onConfirm, disabled }) => {
       <div className="swipe-container" ref={containerRef}>
         <div 
           className="swipe-track-fill" 
-          style={{ width: \`calc(\${thumbLeft}px + 50px)\` }}
+          style={{ width: `calc(${thumbLeft}px + 50px)` }}
         />
         <div className="swipe-text" style={{ opacity: Math.max(0, 1 - (thumbLeft / 150)) }}>
           Slide to Order
         </div>
         <div className="swipe-text-wa">WhatsApp</div>
         <div 
-          className={\`swipe-thumb \${isDragging ? 'dragging' : ''} \${isComplete ? 'complete' : ''}\`}
+          className={`swipe-thumb ${isDragging ? 'dragging' : ''} ${isComplete ? 'complete' : ''}`}
           ref={thumbRef}
-          style={{ transform: \`translateX(\${thumbLeft}px)\` }}
+          style={{ transform: `translateX(${thumbLeft}px)` }}
           onMouseDown={startDrag}
           onTouchStart={startDrag}
+          onTouchEnd={handleEnd}
+          onMouseUp={handleEnd}
         >
           {isComplete ? (
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -119,7 +141,7 @@ const SwipeButton = ({ onConfirm, disabled }) => {
           )}
         </div>
       </div>
-      <style jsx>{\`
+      <style jsx>{`
         .swipe-wrapper {
           position: relative;
           width: 100%;
@@ -235,7 +257,7 @@ const SwipeButton = ({ onConfirm, disabled }) => {
           background: #25D366;
           box-shadow: 0 0 20px rgba(37, 211, 102, 0.4);
         }
-      \`}</style>
+      `}</style>
     </div>
   );
 };
