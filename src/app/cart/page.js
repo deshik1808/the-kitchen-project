@@ -154,6 +154,7 @@ export default function CartPage() {
   const mapsHref = branding.googleMapsUrl ||
     (store.address ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(store.address)}` : null);
 
+  const isStoreOpen = store.open === true || store.open === 'Y';
   const deliveryFee = orderType === 'delivery' ? Number(store.deliveryFee || 0) : 0;
   const discountAmount = appliedPromo?.discount || 0;
   const total = subtotal - discountAmount + deliveryFee;
@@ -678,7 +679,15 @@ export default function CartPage() {
         </div>
       )}
 
-      {canCheckout ? (
+      {!isStoreOpen ? (
+        <div className="store-closed-checkout">
+          <div className="store-closed-checkout-icon">🌙</div>
+          <div>
+            <p className="store-closed-checkout-title">Store is currently closed</p>
+            <p className="store-closed-checkout-sub">{store.closedMessage || 'Back soon with fresh food — check back later!'}</p>
+          </div>
+        </div>
+      ) : canCheckout ? (
         <div className="wa-order-wrap">
           <button className="wa-order-btn" onClick={handleWhatsAppOrder} disabled={isNavigating}>
             <svg className="wa-icon" viewBox="0 0 24 24" width="22" height="22" fill="#fff">
@@ -1321,6 +1330,43 @@ export default function CartPage() {
           box-shadow: none;
         }
         .checkout-btn-disabled:hover { transform: none; opacity: 0.7; color: #fff; }
+
+        .store-closed-checkout {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          margin-top: var(--space-4);
+          padding: var(--space-4);
+          background: var(--color-surface-lowest);
+          border: 1.5px solid var(--color-primary-light);
+          border-radius: var(--radius-xl);
+          box-shadow: var(--shadow-card);
+        }
+        .store-closed-checkout-icon {
+          flex-shrink: 0;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--color-primary-light);
+          border-radius: var(--radius-lg);
+          font-size: 1.4rem;
+          line-height: 1;
+        }
+        .store-closed-checkout-title {
+          font-family: var(--font-display);
+          font-size: 0.92rem;
+          font-weight: 700;
+          color: var(--color-primary);
+          margin: 0 0 2px;
+        }
+        .store-closed-checkout-sub {
+          font-size: 0.8rem;
+          color: var(--color-text-variant);
+          margin: 0;
+          line-height: 1.4;
+        }
 
         .confirm-overlay {
           position: fixed;
