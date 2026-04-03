@@ -58,51 +58,148 @@ function Badge({ label, bg = 'var(--color-primary)' }) {
   return <span className="badge" style={{ background: bg }}>{label}</span>;
 }
 
-// ─── Order Summary ────────────────────────────────────────────────────────────
-function OrderSummary({ order, serverTotal }) {
-  const [open, setOpen] = useState(false);
+// ─── Order Bill (e-receipt style) ─────────────────────────────────────────────
+function OrderSummary({ order, serverTotal, orderId }) {
   const currency = '₹';
   const displayTotal = serverTotal !== undefined ? serverTotal : order.total;
   return (
-    <div className="sum-card">
-      <button type="button" className="sum-toggle" onClick={() => setOpen(o => !o)} aria-expanded={open}>
-        <span>🧾 Your Order ({order.items.length} item{order.items.length > 1 ? 's' : ''})</span>
-        <svg className={`sum-chev${open ? ' open' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
-      </button>
-      {open && (
-        <div className="sum-body">
-          {order.items.map((item, i) => {
-            const addonsTotal = (item.addons || []).reduce((s, a) => s + (a.price || 0), 0);
-            return (
-              <div key={i} className="sum-item">
-                <div className="sum-row-item">
-                  <span>{item.name} <span className="sum-qty">× {item.qty}</span></span>
-                  <span>{currency}{(item.price + addonsTotal) * item.qty}</span>
-                </div>
-                {(item.addons || []).map((a, j) => (
-                  <div key={j} className="sum-addon">+ {a.name} (+{currency}{a.price || 0})</div>
-                ))}
+    <div className="bill-card">
+      <style jsx>{`
+        .bill-card {
+          background: #ffffff;
+          border-radius: 1rem;
+          overflow: hidden;
+          box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+          border: 1px solid #e5e7eb;
+          font-family: 'Courier New', Courier, monospace;
+        }
+        .bill-header {
+          display: flex; align-items: center; gap: 0.5rem;
+          padding: 0.9rem 1.15rem 0.75rem;
+          border-bottom: 1.5px dashed #d1d5db;
+        }
+        .bill-icon { font-size: 1.1rem; }
+        .bill-title { font-weight: 700; font-size: 0.92rem; color: #111; flex: 1; font-family: inherit; }
+        .bill-count {
+          font-size: 0.7rem; font-weight: 700; padding: 2px 9px;
+          border-radius: 99px; font-family: inherit;
+          background: rgba(128,0,128,0.1); color: var(--color-primary, #7c3aed);
+        }
+        .bill-dashes {
+          height: 0; overflow: visible;
+          border: none; border-top: 1.5px dashed #d1d5db;
+          margin: 0 1.15rem; display: block;
+        }
+        .bill-items {
+          padding: 0.75rem 1.15rem 0.65rem;
+          display: flex; flex-direction: column; gap: 0.6rem;
+        }
+        .bill-item { display: flex; flex-direction: column; gap: 2px; }
+        .bill-item-row {
+          display: flex; justify-content: space-between;
+          align-items: baseline; font-size: 0.85rem;
+        }
+        .bill-item-name { color: #111; flex: 1; padding-right: 0.5rem; }
+        .bill-item-qty { color: var(--color-primary, #7c3aed); font-weight: 700; }
+        .bill-item-price { font-weight: 700; color: #111; white-space: nowrap; }
+        .bill-addon {
+          font-size: 0.72rem; color: #6b7280; padding-left: 1.2rem;
+          display: flex; justify-content: space-between;
+        }
+        .bill-summary {
+          padding: 0.55rem 1.15rem 0.45rem;
+          display: flex; flex-direction: column; gap: 0.28rem;
+        }
+        .bill-row {
+          display: flex; justify-content: space-between;
+          font-size: 0.8rem; color: #6b7280;
+        }
+        .bill-discount { color: #16a34a; font-weight: 600; }
+        .bill-total-row {
+          display: flex; justify-content: space-between; align-items: center;
+          padding: 0.75rem 1.15rem;
+          background: rgba(128,0,128,0.05);
+          border-top: 1.5px dashed #d1d5db;
+        }
+        .bill-total-label { font-weight: 800; font-size: 0.88rem; color: #111; font-family: inherit; }
+        .bill-total-val {
+          font-weight: 900; font-size: 1.15rem;
+          color: var(--color-primary, #7c3aed); font-family: inherit;
+        }
+        .bill-adjusted { font-size: 0.72rem; color: #9333ea; text-align: right; padding: 0 1.15rem; }
+        .bill-meta {
+          display: flex; gap: 0.4rem; font-size: 0.78rem;
+          color: #6b7280; padding: 0.35rem 1.15rem 0;
+        }
+        .bill-meta-last { padding-bottom: 0.85rem; }
+        .bill-order-id {
+          font-size: 0.7rem;
+          color: #9ca3af;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          padding: 0.3rem 1.15rem 0.55rem;
+          border-bottom: 1.5px dashed #d1d5db;
+        }
+      `}</style>
+      <div className="bill-header">
+        <span className="bill-icon">🧾</span>
+        <span className="bill-title">Your Order</span>
+        <span className="bill-count">{order.items.length} item{order.items.length > 1 ? 's' : ''}</span>
+      </div>
+      {orderId && (
+        <div className="bill-order-id">Order #{orderId}</div>
+      )}
+
+      <div className="bill-dashes" aria-hidden="true" />
+
+      <div className="bill-items">
+        {order.items.map((item, i) => {
+          const addonsTotal = (item.addons || []).reduce((s, a) => s + (a.price || 0), 0);
+          return (
+            <div key={i} className="bill-item">
+              <div className="bill-item-row">
+                <span className="bill-item-name">
+                  <span className="bill-item-qty">{item.qty}×</span> {item.name}
+                </span>
+                <span className="bill-item-price">{currency}{(item.price + addonsTotal) * item.qty}</span>
               </div>
-            );
-          })}
-          <div className="sum-divider" />
-          <div className="sum-row"><span>Subtotal</span><span>{currency}{order.subtotal}</span></div>
-          {order.discountAmount > 0 && (
-            <div className="sum-row sum-discount">
-              <span>Discount{order.discountCode ? ` (${order.discountCode})` : ''}</span>
-              <span>−{currency}{order.discountAmount}</span>
+              {(item.addons || []).map((a, j) => (
+                <div key={j} className="bill-addon">↳ {a.name} <span>+{currency}{a.price || 0}</span></div>
+              ))}
             </div>
-          )}
-          {order.deliveryFee > 0 && (
-            <div className="sum-row"><span>{order.deliveryType === 'delivery' ? 'Delivery Fee' : ''}</span><span>{currency}{order.deliveryFee}</span></div>
-          )}
-          <div className="sum-row sum-total"><span>Total</span><span>{currency}{displayTotal}</span></div>
-          {serverTotal !== undefined && serverTotal !== order.total && (
-            <p className="sum-adjusted">⚠️ Adjusted by store (estimate: {currency}{order.total})</p>
-          )}
-          {order.deliveryType === 'delivery' && order.address && <p className="sum-meta">📍 {order.address}</p>}
-          {order.deliveryType === 'pickup' && <p className="sum-meta">🏃 Self-Pickup</p>}
-        </div>
+          );
+        })}
+      </div>
+
+      <div className="bill-dashes" aria-hidden="true" />
+
+      <div className="bill-summary">
+        <div className="bill-row"><span>Subtotal</span><span>{currency}{order.subtotal}</span></div>
+        {order.discountAmount > 0 && (
+          <div className="bill-row bill-discount">
+            <span>Discount {order.discountCode ? `(${order.discountCode})` : ''}</span>
+            <span>− {currency}{order.discountAmount}</span>
+          </div>
+        )}
+        {order.deliveryFee > 0 && (
+          <div className="bill-row"><span>Delivery Fee</span><span>{currency}{order.deliveryFee}</span></div>
+        )}
+      </div>
+
+      <div className="bill-total-row">
+        <span className="bill-total-label">Total Payable</span>
+        <span className="bill-total-val">{currency}{displayTotal}</span>
+      </div>
+
+      {serverTotal !== undefined && serverTotal !== order.total && (
+        <p className="bill-adjusted">⚠️ Adjusted by store (estimate: {currency}{order.total})</p>
+      )}
+
+      {order.deliveryType === 'delivery' && order.address && (
+        <div className="bill-meta bill-meta-last"><span>📍</span><span>{order.address}</span></div>
+      )}
+      {order.deliveryType === 'pickup' && (
+        <div className="bill-meta bill-meta-last"><span>🏃</span><span>Self-Pickup</span></div>
       )}
     </div>
   );
@@ -280,7 +377,7 @@ export default function ConfirmationPage() {
           {waUrl && (
             <button onClick={openWhatsApp} className="step-row wa-row">
               <div className="step-left">
-                <Badge label="💬" bg="#25D366" />
+                <Badge label="WA" bg="#25D366" />
                 <div className="step-text">
                   <span className="step-title">WhatsApp not opened?</span>
                   <span className="step-sub">Tap to re-send your order</span>
@@ -297,7 +394,6 @@ export default function ConfirmationPage() {
       {isFailed && (
         <>
           <div className="hero-shell">
-            <div className="hero-arc" aria-hidden="true" />
             <CheckIcon />
             <h1 className="hero-title">Message Sent ✅</h1>
             <p className="hero-id">#{pendingOrder?.orderId}</p>
@@ -307,7 +403,7 @@ export default function ConfirmationPage() {
           <div className="steps-shell">
             <button onClick={handleRetry} disabled={retrying} className="step-row primary-row">
               <div className="step-left">
-                <Badge label="🔄" bg="var(--color-primary)" />
+                <Badge label="↺" bg="var(--color-primary)" />
                 <div className="step-text">
                   <span className="step-title">{retrying ? 'Saving…' : 'Retry Save to Kitchen'}</span>
                   <span className="step-sub">Tap to re-send to our system</span>
@@ -317,7 +413,7 @@ export default function ConfirmationPage() {
             {waUrl && (
               <button onClick={openWhatsApp} className="step-row wa-row">
                 <div className="step-left">
-                  <Badge label="💬" bg="#25D366" />
+                  <Badge label="WA" bg="#25D366" />
                   <div className="step-text">
                     <span className="step-title">Re-send on WhatsApp</span>
                     <span className="step-sub">Opens WhatsApp with your order</span>
@@ -335,7 +431,6 @@ export default function ConfirmationPage() {
       {isSuccess && (
         <>
           <div className="hero-shell">
-            <div className="hero-arc" aria-hidden="true" />
             <Confetti />
             <CheckIcon />
             <h1 className="hero-title">Order Confirmed!</h1>
@@ -345,86 +440,94 @@ export default function ConfirmationPage() {
 
           <div className="steps-shell">
 
-            {/* Step 1: WhatsApp */}
+            {/* Timeline Steps */}
             {waUrl && (
-              <div className="step-group">
-                <p className="group-label">Step 1 — Confirm your order</p>
+              <div className="timeline">
+                <div className="tl-label">STEP 1 — CONFIRM YOUR ORDER</div>
 
-                <button onClick={openWhatsApp} className="step-row wa-row">
-                  <div className="step-left">
-                    <Badge label="1" bg="#25D366" />
-                    <div className="step-text">
-                      <span className="step-title">Send Order on WhatsApp</span>
-                      <span className="step-sub">{waSent === 'done' ? 'Tap again if needed' : 'Tap to open WhatsApp with your order'}</span>
-                    </div>
+                {/* WA action */}
+                <div className="tl-item">
+                  <div className="tl-node tl-node-wa">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                   </div>
-                  <span className="step-arrow">→</span>
-                </button>
+                  <div className="tl-connector" />
+                  <div className="tl-content">
+                    <button onClick={openWhatsApp} className="tl-action-btn tl-wa-btn">
+                      <div>
+                        <span className="tl-action-title">Send Order on WhatsApp</span>
+                        <span className="tl-action-sub">{waSent === 'done' ? 'Tap again if needed' : 'Tap to open WhatsApp'}</span>
+                      </div>
+                      <span className="tl-arrow">↗</span>
+                    </button>
+                  </div>
+                </div>
 
-                {waSent !== 'done' ? (
-                  <button onClick={handleSentWA} disabled={waSent === 'sending'} className="step-row confirm-row">
-                    <div className="step-left">
-                      <Badge label="✓" bg="var(--color-primary)" />
-                      <div className="step-text">
-                        <span className="step-title">
-                          {waSent === 'sending' && <span className="inline-spin" />}
-                          {waSent === 'sending' ? 'Confirming…' : "I've Sent the Message"}
-                        </span>
-                        <span className="step-sub">Tap after sending on WhatsApp</span>
-                      </div>
-                    </div>
-                  </button>
-                ) : (
-                  <div className="step-row done-row">
-                    <div className="step-left">
-                      <Badge label="🎉" bg="#22c55e" />
-                      <div className="step-text">
-                        <span className="step-title">Kitchen Notified!</span>
-                        <span className="step-sub">Your order is being prepared</span>
-                      </div>
-                    </div>
+                {/* Confirm sent */}
+                <div className="tl-item">
+                  <div className={`tl-node ${waSent === 'done' ? 'tl-node-done' : 'tl-node-idle'}`}>
+                    {waSent === 'done' ? '✓' : '2'}
                   </div>
-                )}
+                  <div className="tl-content">
+                    {waSent !== 'done' ? (
+                      <button onClick={handleSentWA} disabled={waSent === 'sending'} className="tl-action-btn tl-confirm-btn">
+                        <div>
+                          <span className="tl-action-title">
+                            {waSent === 'sending' && <span className="inline-spin" />}
+                            {waSent === 'sending' ? 'Confirming…' : "I've Sent the Message"}
+                          </span>
+                          <span className="tl-action-sub">Tap after sending on WhatsApp</span>
+                        </div>
+                      </button>
+                    ) : (
+                      <div className="tl-done-chip">
+                        <span className="tl-done-title">Kitchen Notified!</span>
+                        <span className="tl-done-sub">Your order is being prepared 👨‍🍳</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Step 2: Payment */}
             {hasPayment && (
-              <div className="step-group">
-                <p className="group-label">Step 2 — Complete payment</p>
+              <div className="timeline">
+                <div className="tl-label">STEP 2 — COMPLETE PAYMENT</div>
 
                 {upiQrUrl && (
-                  <div className="step-row qr-row">
-                    <div className="qr-top">
-                      <Badge label="₹" bg="#3b82f6" />
-                      <div className="step-text">
-                        <span className="step-title">Pay via UPI</span>
-                        <span className="step-sub">Scan with Google Pay, PhonePe, or any UPI app</span>
+                  <div className="tl-item">
+                    <div className="tl-node tl-node-pay">₹</div>
+                    <div className="tl-content">
+                      <div className="tl-qr-card">
+                        <span className="tl-action-title">Pay via UPI</span>
+                        <span className="tl-action-sub">Scan with Google Pay, PhonePe, or any UPI app</span>
+                        <div className="qr-img-wrap">
+                          <img src={upiQrUrl} alt="UPI QR Code" className="qr-img" />
+                        </div>
                       </div>
-                    </div>
-                    <div className="qr-img-wrap">
-                      <img src={upiQrUrl} alt="UPI QR Code" className="qr-img" />
                     </div>
                   </div>
                 )}
 
                 {razorpayLink && (
-                  <a href={razorpayLink} target="_blank" rel="noreferrer" className="step-row pay-row">
-                    <div className="step-left">
-                      <Badge label="💳" bg="#3b82f6" />
-                      <div className="step-text">
-                        <span className="step-title">Pay Online</span>
-                        <span className="step-sub">Pay ₹{serverTotal || pendingOrder?.total || ''} via Razorpay</span>
-                      </div>
+                  <div className="tl-item">
+                    <div className="tl-node tl-node-pay">💳</div>
+                    <div className="tl-content">
+                      <a href={razorpayLink} target="_blank" rel="noreferrer" className="tl-action-btn tl-pay-btn">
+                        <div>
+                          <span className="tl-action-title">Pay Online</span>
+                          <span className="tl-action-sub">Pay ₹{serverTotal || pendingOrder?.total || ''} via Razorpay</span>
+                        </div>
+                        <span className="tl-arrow">↗</span>
+                      </a>
                     </div>
-                    <span className="step-arrow">→</span>
-                  </a>
+                  </div>
                 )}
               </div>
             )}
 
-            {/* Order Summary */}
-            {pendingOrder && <OrderSummary order={pendingOrder} serverTotal={serverTotal} />}
+            {/* Order Bill */}
+            {pendingOrder && <OrderSummary order={pendingOrder} serverTotal={serverTotal} orderId={orderId} />}
           </div>
 
           <div className="footer">
@@ -439,27 +542,20 @@ export default function ConfirmationPage() {
         /* Page */
         .cp { max-width: 480px; margin: 0 auto; padding-bottom: 3rem; min-height: 60vh; }
 
-        /* Hero */
+        /* Hero — extends 20px upward to fill behind header's rounded bottom corners */
         .hero-shell {
           position: relative;
           text-align: center;
-          padding: 3.5rem 1.5rem 3.5rem;
+          /* margin-top pulls hero up behind header rounded corners; padding-top compensates */
+          margin-top: -20px;
+          padding: calc(2rem + 20px) 1.5rem 3rem;
           overflow: hidden;
-          background: linear-gradient(160deg, var(--color-primary-dim) 0%, var(--color-primary) 55%, var(--color-primary-container) 100%);
-          border-radius: 0 0 2.5rem 2.5rem;
+          background: var(--color-primary);
+          border-radius: 0 0 2.25rem 2.25rem;
           color: white;
-          margin-bottom: 0;
+          margin-bottom: 1.5rem;
         }
-        .hero-arc {
-          position: absolute;
-          bottom: -60px; left: 50%;
-          transform: translateX(-50%);
-          width: 140%; height: 120px;
-          background: var(--color-bg);
-          border-radius: 50% 50% 0 0;
-          z-index: 1;
-        }
-        .hero-shell > *:not(.hero-arc):not(.cfg-wrap) { position: relative; z-index: 2; }
+        .hero-shell > *:not(.cfg-wrap) { position: relative; z-index: 2; }
         .hero-title {
           font-family: var(--font-display);
           font-size: clamp(1.7rem, 7vw, 2.2rem);
@@ -550,49 +646,86 @@ export default function ConfirmationPage() {
         .cfg-dot { position: absolute; top: -10px; border-radius: 2px; animation: fall linear both; }
         @keyframes fall { from{transform:translateY(-10px) rotate(0deg);opacity:1} to{transform:translateY(180px) rotate(720deg);opacity:0} }
 
-        /* Steps */
-        .steps-shell { padding: 1.75rem 1.25rem 0; display: flex; flex-direction: column; gap: 0.75rem; }
-        .step-group { display: flex; flex-direction: column; gap: 0.5rem; }
-        .group-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-outline); padding-left: 0.25rem; margin-bottom: 0.1rem; }
+        /* Steps shell */
+        .steps-shell { padding: 0 1.25rem; display: flex; flex-direction: column; gap: 1.25rem; }
 
-        /* Step Row */
-        .step-row {
+        /* Timeline */
+        .timeline { display: flex; flex-direction: column; gap: 0; }
+        .tl-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-outline-variant); margin-bottom: 0.85rem; padding-left: 0.25rem; }
+        .tl-item { display: flex; align-items: flex-start; gap: 0.85rem; position: relative; margin-bottom: 0.75rem; }
+        .tl-item:last-child { margin-bottom: 0; }
+
+        /* Timeline node dot */
+        .tl-node {
+          flex-shrink: 0;
+          width: 36px; height: 36px;
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.85rem; font-weight: 800; color: white;
+          position: relative; z-index: 1;
+          margin-top: 0.15rem;
+        }
+        .tl-node-wa { background: #25D366; }
+        .tl-node-idle { background: var(--color-surface-container-high); color: var(--color-text-variant); font-size: 0.8rem; }
+        .tl-node-done { background: #22c55e; }
+        .tl-node-pay { background: var(--color-primary); font-size: 0.9rem; }
+
+        /* Vertical connector line */
+        .tl-connector {
+          display: none; /* connector via item margin instead */
+        }
+
+        /* Timeline content */
+        .tl-content { flex: 1; min-width: 0; }
+
+        /* Action buttons in timeline */
+        .tl-action-btn {
           display: flex; align-items: center; justify-content: space-between;
-          gap: 0.9rem; padding: 1rem 1.1rem;
+          gap: 0.75rem; padding: 0.85rem 1rem;
+          width: 100%; text-align: left; text-decoration: none;
+          border-radius: 0.875rem;
+          border: 1.5px solid var(--color-surface-container-low);
           background: var(--color-surface-lowest, #fff);
-          border-radius: 1rem; border: none;
-          cursor: pointer; width: 100%; text-align: left;
-          text-decoration: none; color: var(--color-text);
-          font-family: var(--font-body);
-          box-shadow: 0 2px 12px rgba(42,46,65,0.07);
+          cursor: pointer; font-family: var(--font-body);
+          color: var(--color-text);
+          box-shadow: 0 2px 10px rgba(0,0,0,0.06);
           transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s;
         }
-        .step-row:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(42,46,65,0.13); }
-        .step-row:active:not(:disabled) { transform: scale(0.98); }
-        .step-row:disabled { opacity: 0.7; cursor: not-allowed; }
-        .step-left { display: flex; align-items: center; gap: 0.85rem; flex: 1; min-width: 0; }
-        .step-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        .step-title { font-family: var(--font-display); font-weight: 700; font-size: 0.93rem; color: var(--color-text); display: flex; align-items: center; gap: 5px; }
-        .step-sub { font-size: 0.77rem; color: var(--color-text-variant); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .step-arrow { font-size: 1.1rem; color: var(--color-primary); font-weight: 800; flex-shrink: 0; margin-left: auto; }
+        .tl-action-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.11); }
+        .tl-action-btn:active:not(:disabled) { transform: scale(0.98); }
+        .tl-action-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+        .tl-action-btn > div { display: flex; flex-direction: column; gap: 2px; }
+        .tl-action-title { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
+        .tl-action-sub { font-size: 0.75rem; color: var(--color-text-variant); }
+        .tl-arrow { font-size: 1rem; color: var(--color-primary); font-weight: 800; flex-shrink: 0; }
 
-        /* Row variants */
-        .wa-row      { border-left: 3px solid #25D366; }
-        .confirm-row { border-left: 3px solid var(--color-primary); }
-        .done-row    { border-left: 3px solid #22c55e; background: rgba(34,197,94,0.05); cursor: default; }
-        .done-row:hover { transform: none !important; }
-        .pay-row     { border-left: 3px solid #3b82f6; }
-        .primary-row { border-left: 3px solid var(--color-primary); }
-        .qr-row      { flex-direction: column; align-items: stretch; cursor: default; border-left: 3px solid #3b82f6; }
-        .qr-row:hover { transform: none !important; }
+        /* Specific button variants */
+        .tl-wa-btn { border-color: rgba(37,211,102,0.3); background: rgba(37,211,102,0.04); }
+        .tl-confirm-btn { border-color: color-mix(in srgb, var(--color-primary) 30%, transparent); }
+        .tl-pay-btn { border-color: color-mix(in srgb, var(--color-primary) 30%, transparent); }
 
-        /* QR */
-        .qr-top { display: flex; align-items: center; gap: 0.85rem; }
-        .qr-img-wrap { background: white; border-radius: 0.75rem; border: 1px solid var(--color-surface-container); padding: 0.75rem; display: flex; justify-content: center; }
+        /* Done chip */
+        .tl-done-chip {
+          display: flex; flex-direction: column; gap: 2px;
+          padding: 0.85rem 1rem;
+          background: rgba(34,197,94,0.06);
+          border: 1.5px solid rgba(34,197,94,0.25);
+          border-radius: 0.875rem;
+        }
+        .tl-done-title { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; color: #16a34a; }
+        .tl-done-sub { font-size: 0.75rem; color: #4ade80; color: #22c55e; }
+
+        /* QR card in timeline */
+        .tl-qr-card {
+          display: flex; flex-direction: column; gap: 0.4rem;
+          padding: 0.85rem 1rem;
+          background: var(--color-surface-lowest, #fff);
+          border: 1.5px solid var(--color-surface-container-low);
+          border-radius: 0.875rem;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+        .qr-img-wrap { background: white; border-radius: 0.75rem; border: 1px solid var(--color-surface-container); padding: 0.75rem; display: flex; justify-content: center; margin-top: 0.35rem; }
         .qr-img { max-width: 190px; width: 100%; display: block; border-radius: 4px; }
-
-        /* Badge */
-        .badge { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 36px; height: 36px; border-radius: 10px; font-size: 1rem; font-weight: 800; color: white; font-family: var(--font-display); }
 
         /* Skeleton */
         .sk { background: linear-gradient(90deg, var(--color-surface-container-low) 25%, var(--color-surface-container) 50%, var(--color-surface-container-low) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; display: block; }
@@ -601,23 +734,7 @@ export default function ConfirmationPage() {
         /* Notice banner */
         .notice { display: flex; align-items: flex-start; gap: 0.5rem; margin: 1.5rem 1.25rem 0.5rem; padding: 0.85rem 1rem; background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.25); border-radius: 0.75rem; font-size: 0.83rem; color: var(--color-text); line-height: 1.5; }
 
-        /* Order Summary */
-        .sum-card { background: var(--color-surface-lowest,#fff); border-radius: 1rem; overflow: hidden; box-shadow: 0 2px 12px rgba(42,46,65,0.06); }
-        .sum-toggle { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 1rem 1.1rem; background: none; border: none; font-family: var(--font-display); font-size: 0.9rem; font-weight: 700; color: var(--color-text); cursor: pointer; transition: background 0.15s; }
-        .sum-toggle:hover { background: var(--color-surface-container-low); }
-        .sum-chev { transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1); color: var(--color-text-variant); }
-        .sum-chev.open { transform: rotate(180deg); }
-        .sum-body { padding: 0 1.1rem 1rem; }
-        .sum-item { margin-bottom: 0.6rem; }
-        .sum-row-item { display: flex; justify-content: space-between; font-size: 0.87rem; }
-        .sum-qty { color: var(--color-text-variant); font-weight: 400; }
-        .sum-addon { font-size: 0.75rem; color: var(--color-text-variant); padding-left: 0.75rem; margin-top: 2px; }
-        .sum-divider { height: 1px; background: var(--color-surface-container); margin: 0.6rem 0; }
-        .sum-row { display: flex; justify-content: space-between; font-size: 0.84rem; color: var(--color-text-variant); padding: 2px 0; }
-        .sum-discount { color: #22c55e; font-weight: 600; }
-        .sum-total { font-family: var(--font-display); font-weight: 800; font-size: 1rem; color: var(--color-text); margin-top: 0.25rem; }
-        .sum-adjusted { font-size: 0.74rem; color: var(--color-primary); margin-top: 0.35rem; text-align: right; }
-        .sum-meta { font-size: 0.8rem; color: var(--color-text-variant); margin-top: 0.5rem; }
+        /* bill-* styles are scoped inside OrderSummary component */
 
         /* Footer */
         .footer { text-align: center; padding: 2rem 1.5rem 1rem; }

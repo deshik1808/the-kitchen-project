@@ -47,7 +47,7 @@ export function buildWaUrl(cartItems, formData, storeSettings, orderId, totals) 
   // Build message
   const isDelivery = formData.deliveryType === 'delivery';
   const lines = [
-    `🍕 ORDER #${orderId}`,
+    `🍽️ ORDER #${orderId}`,
     '',
     `👤 ${formData.name} | 📞 ${formData.phone}`,
     isDelivery
@@ -64,7 +64,7 @@ export function buildWaUrl(cartItems, formData, storeSettings, orderId, totals) 
     lines.push(`🎫 Discount${discountCode ? ` (${discountCode})` : ''}: -${currency}${discountAmount}`);
   }
   if (deliveryFee > 0) {
-    lines.push(`🚚 Delivery: ${currency}${deliveryFee}`);
+    lines.push(`🚁 Delivery: ${currency}${deliveryFee}`);
   }
 
   lines.push(`━━━━━━━━━━━━━`);

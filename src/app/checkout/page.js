@@ -270,7 +270,7 @@ export default function CheckoutPage() {
             className={`toggle-btn ${formData.deliveryType === 'delivery' ? 'active' : ''}`}
             onClick={() => setFormData(p => ({ ...p, deliveryType: 'delivery' }))}
           >
-            🚚 Delivery
+            🚁 Delivery
           </button>
         )}
         <button
