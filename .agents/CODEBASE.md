@@ -112,8 +112,8 @@ kitchen-order/
 | Phase | Status | Tasks |
 |-------|--------|-------|
 | 1. Setup | 🟢 Done | 1.1 Init Next.js, 1.2 Google Sheets, 1.3 Design System |
-| 2. n8n Backend | 🟡 In Progress | Menu API (Done), Discount (Done), Order (Done), Payment webhook |
-| 3. Frontend | 🟢 Done | Menu, Cart, Checkout, Confirmation pages |
+| 2. n8n Backend | 🟢 Done | Menu API, Discount, Order, Payment webhook (Full Support) |
+| 3. Frontend | 🟢 Done | Menu, Cart, Checkout, Confirmation pages (Redesigned) |
 | 4. Polish | 🟢 Done | Animations, errors, store-closed UX, PWA |
 | 5. Deploy | ⏳ Not Started | Vercel, webhook connections, E2E test |
 

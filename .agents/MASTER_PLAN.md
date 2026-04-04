@@ -164,6 +164,9 @@ A **mobile-first food ordering website** for a small kitchen/restaurant. Custome
 | 20 | Footer Text | © 2026 Your Kitchen. Made with ❤️ | Footer |
 | 21 | Instagram URL | *(optional)* | Social link |
 | 22 | Google Maps URL | *(optional)* | Location link |
+| 23 | **COD Available** | **Y** | **Toggle Cash on Delivery** |
+| 24 | **UPI Available** | **Y** | **Toggle UPI QR Payment** |
+| 25 | **Razorpay Available** | **Y** | **Toggle Razorpay Online** |
 
 ---
 
@@ -258,7 +261,10 @@ Response:
     "minOrder": 150,
     "deliveryFee": 30,
     "upiQrUrl": "https://...",
-    "currency": "₹"
+    "currency": "₹",
+    "codAvailable": true,
+    "upiAvailable": true,
+    "razorpayAvailable": true
   },
   "branding": {
     "primaryColor": "#E63946",

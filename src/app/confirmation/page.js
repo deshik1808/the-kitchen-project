@@ -214,6 +214,7 @@ export default function ConfirmationPage() {
   const [orderResult, setOrderResult] = useState(null);
   const [waSent, setWaSent] = useState('idle'); // idle | sending | done
   const [retrying, setRetrying] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState(null);
 
   const upiQrUrl = orderResult?.upiQrUrl || storeData?.store?.upiQrUrl || '';
   const razorpayLink = orderResult?.razorpayLink || '';
@@ -313,6 +314,18 @@ export default function ConfirmationPage() {
     return () => { cancelled = true; };
   }, []); // ← empty deps: run once on mount only
 
+  // Auto-select payment method if only one is available
+  useEffect(() => {
+    if (phase === 'success' && !selectedPayment && storeData?.store) {
+      const { codAvailable, upiAvailable, razorpayAvailable } = storeData.store;
+      const available = [];
+      if (codAvailable) available.push('cod');
+      if (upiAvailable) available.push('upi');
+      if (razorpayAvailable) available.push('razorpay');
+      if (available.length === 1) setSelectedPayment(available[0]);
+    }
+  }, [phase, storeData, selectedPayment]);
+
   const openWhatsApp = () => { if (waUrl) window.open(waUrl, '_blank'); };
 
   const handleSentWA = useCallback(async () => {
@@ -340,7 +353,15 @@ export default function ConfirmationPage() {
   const isSuccess  = phase === 'success';
   const isFailed   = phase === 'failed';
   const isEmpty    = phase === 'empty';
-  const hasPayment = isSuccess && (upiQrUrl || razorpayLink);
+  
+  const { store } = storeData || {};
+  const showCOD = store?.codAvailable;
+  const showUPI = store?.upiAvailable && upiQrUrl;
+  const showRP  = store?.razorpayAvailable && razorpayLink;
+
+  // Payment is available if any mode is enabled in settings
+  const currency = store?.currency || '₹';
+  const hasPayment = (showCOD || showUPI || showRP);
 
   return (
     <div className="cp">
@@ -496,37 +517,84 @@ export default function ConfirmationPage() {
             {/* Step 2: Payment */}
             {hasPayment && (
               <div className="timeline">
-                <div className="tl-label">STEP 2 — COMPLETE PAYMENT</div>
-
-                {upiQrUrl && (
-                  <div className="tl-item">
-                    <div className="tl-node tl-node-pay">₹</div>
-                    <div className="tl-content">
-                      <div className="tl-qr-card">
-                        <span className="tl-action-title">Pay via UPI</span>
-                        <span className="tl-action-sub">Scan with Google Pay, PhonePe, or any UPI app</span>
-                        <div className="qr-img-wrap">
-                          <img src={upiQrUrl} alt="UPI QR Code" className="qr-img" />
+                <div className="tl-label">STEP 2 — CHOOSE PAYMENT MODE</div>
+                
+                <div className="pay-options-vertical">
+                  {showUPI && (
+                    <div className={`pay-card-v ${selectedPayment === 'upi' ? 'active' : ''}`}>
+                      <button className="pay-card-v-header" onClick={() => setSelectedPayment('upi')}>
+                        <span className="pay-card-v-icon">📱</span>
+                        <div className="pay-card-v-text">
+                          <span className="pay-card-v-title">UPI — Scan & Pay</span>
+                          <span className="pay-card-v-sub">Google Pay, PhonePe, Paytm</span>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {razorpayLink && (
-                  <div className="tl-item">
-                    <div className="tl-node tl-node-pay">💳</div>
-                    <div className="tl-content">
-                      <a href={razorpayLink} target="_blank" rel="noreferrer" className="tl-action-btn tl-pay-btn">
-                        <div>
-                          <span className="tl-action-title">Pay Online</span>
-                          <span className="tl-action-sub">Pay ₹{serverTotal || pendingOrder?.total || ''} via Razorpay</span>
+                        {selectedPayment === 'upi' && <span className="pay-card-v-check">✓</span>}
+                      </button>
+                      
+                      {selectedPayment === 'upi' && upiQrUrl && (
+                        <div className="pay-card-v-body">
+                          <div className="pay-v-divider" />
+                          <div className="pay-upi-qr-box">
+                            <img src={upiQrUrl} alt="UPI QR Code" className="pay-v-qr" />
+                            <span className="pay-v-qr-text">Scan & pay {currency}{serverTotal || pendingOrder?.total}</span>
+                          </div>
                         </div>
-                        <span className="tl-arrow">↗</span>
-                      </a>
+                      )}
                     </div>
-                  </div>
-                )}
+                  )}
+
+                  {showRP && (
+                     <div className={`pay-card-v ${selectedPayment === 'razorpay' ? 'active' : ''}`}>
+                      <button className="pay-card-v-header" onClick={() => setSelectedPayment('razorpay')}>
+                        <span className="pay-card-v-icon">💳</span>
+                        <div className="pay-card-v-text">
+                          <span className="pay-card-v-title">Pay Online</span>
+                          <span className="pay-card-v-sub">Cards, Netbanking & more</span>
+                        </div>
+                        {selectedPayment === 'razorpay' && <span className="pay-card-v-check">✓</span>}
+                      </button>
+                      
+                      {selectedPayment === 'razorpay' && razorpayLink && (
+                        <div className="pay-card-v-body">
+                           <div className="pay-v-divider" />
+                           <a href={razorpayLink} target="_blank" rel="noreferrer" className="tl-action-btn pay-v-rp-btn">
+                             <div>
+                               <span className="tl-action-title">Pay {currency}{serverTotal || pendingOrder?.total} Now</span>
+                               <span className="tl-action-sub">Secure payment via Razorpay</span>
+                             </div>
+                             <span className="tl-arrow">↗</span>
+                           </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {showCOD && (
+                    <div className={`pay-card-v ${selectedPayment === 'cod' ? 'active' : ''}`}>
+                      <button className="pay-card-v-header" onClick={() => setSelectedPayment('cod')}>
+                        <span className="pay-card-v-icon">🏠</span>
+                        <div className="pay-card-v-text">
+                          <span className="pay-card-v-title">Cash on Delivery</span>
+                          <span className="pay-card-v-sub">Pay {currency}{serverTotal || pendingOrder?.total} at your door</span>
+                        </div>
+                        {selectedPayment === 'cod' && <span className="pay-card-v-check">✓</span>}
+                      </button>
+                      
+                      {selectedPayment === 'cod' && (
+                        <div className="pay-card-v-body">
+                          <div className="pay-v-divider" />
+                          <div className="pay-cod-msg">
+                            <span className="cod-msg-icon">😊</span>
+                            <div className="cod-msg-text">
+                              <strong>No payment needed now!</strong>
+                              <span>Your food is on its way.</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -730,6 +798,60 @@ export default function ConfirmationPage() {
         }
         .qr-img-wrap { background: white; border-radius: 0.75rem; border: 1px solid var(--color-surface-container); padding: 0.75rem; display: flex; justify-content: center; margin-top: 0.35rem; }
         .qr-img { max-width: 190px; width: 100%; display: block; border-radius: 4px; }
+        
+        /* Vertical Inline Payment Cards (Option C) */
+        .pay-options-vertical { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; }
+        
+        .pay-card-v {
+          background: var(--color-surface-lowest, #fff);
+          border: 2px solid var(--color-surface-container-low);
+          border-radius: 1rem; overflow: hidden;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .pay-card-v:hover {
+          border-color: var(--color-outline-variant);
+        }
+        .pay-card-v.active {
+          border-color: var(--color-primary);
+          box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent), 0 4px 12px rgba(0,0,0,0.06);
+        }
+        
+        .pay-card-v-header {
+          display: flex; align-items: center; gap: 1rem;
+          width: 100%; text-align: left; background: transparent; border: none;
+          padding: 1.1rem 1.15rem; cursor: pointer;
+        }
+        .pay-card-v-icon { font-size: 1.8rem; }
+        .pay-card-v-text { display: flex; flex-direction: column; gap: 0.2rem; flex: 1; min-width: 0; }
+        .pay-card-v-title { font-family: var(--font-display); font-weight: 700; font-size: 1rem; color: var(--color-text); }
+        .pay-card-v.active .pay-card-v-title { color: var(--color-primary); }
+        .pay-card-v-sub { font-size: 0.82rem; color: var(--color-text-variant); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+        .pay-card-v-check { font-size: 1.3rem; color: var(--color-primary); font-weight: 800; animation: pop 0.2s cubic-bezier(0.175,0.885,0.32,1.275); }
+        
+        .pay-card-v-body {
+          padding: 0 1.15rem 1.15rem;
+          animation: anim-slide-down 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .pay-v-divider { height: 1.5px; background: var(--color-surface-container); margin-bottom: 1.15rem; }
+        
+        .pay-cod-msg { display: flex; gap: 0.85rem; align-items: flex-start; }
+        .cod-msg-icon { font-size: 1.6rem; margin-top: -2px; }
+        .cod-msg-text { display: flex; flex-direction: column; gap: 3px; }
+        .cod-msg-text strong { font-size: 0.95rem; color: var(--color-text); }
+        .cod-msg-text span { font-size: 0.88rem; color: var(--color-text-variant); line-height: 1.4; }
+
+        .pay-upi-qr-box { display: flex; flex-direction: column; align-items: center; gap: 0.85rem; }
+        .pay-v-qr { width: 160px; height: 160px; border-radius: 0.75rem; border: 1.5px solid var(--color-surface-container); box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+        .pay-v-qr-text { font-size: 0.95rem; font-weight: 700; color: var(--color-text); background: var(--color-surface-container-lowest); padding: 0.4rem 1.15rem; border-radius: 99px; }
+
+        .pay-v-rp-btn { border-color: rgba(37, 99, 235, 0.2); background: rgba(37, 99, 235, 0.04); }
+        .pay-card-v.active .pay-v-rp-btn { border-color: color-mix(in srgb, var(--color-primary) 30%, transparent); background: color-mix(in srgb, var(--color-primary) 4%, transparent); }
+
+        @keyframes anim-slide-down {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
 
         /* Skeleton */
         .sk { background: linear-gradient(90deg, var(--color-surface-container-low) 25%, var(--color-surface-container) 50%, var(--color-surface-container-low) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; display: block; }
