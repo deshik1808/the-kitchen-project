@@ -156,17 +156,18 @@ const SwipeButton = ({ onConfirm, disabled }) => {
           top: -46px;
           left: 50%;
           transform: translateX(-50%) translateY(10px);
-          background: #25D366;
-          color: white;
-          padding: 8px 16px;
-          border-radius: 20px;
+          background: #1e2130;
+          color: #fff;
+          padding: 8px 14px;
+          border-radius: 12px;
+          border-left: 3px solid var(--color-primary);
           font-size: 0.82rem;
-          font-weight: 600;
+          font-weight: 400;
           letter-spacing: 0.02em;
           opacity: 0;
           pointer-events: none;
           transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
           white-space: nowrap;
           z-index: 10;
         }
@@ -181,7 +182,7 @@ const SwipeButton = ({ onConfirm, disabled }) => {
           transform: translateX(-50%) rotate(45deg);
           width: 10px;
           height: 10px;
-          background: #25D366;
+          background: #1e2130;
         }
         .swipe-container {
           position: relative;
