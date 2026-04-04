@@ -90,6 +90,7 @@ function OrderSummary({ order, serverTotal, orderId }) {
           border: none; border-top: 1.5px dashed #d1d5db;
           margin: 0 1.15rem; display: block;
         }
+        .bill-dashes-full { margin: 0; }
         .bill-items {
           padding: 0.75rem 1.15rem 0.65rem;
           display: flex; flex-direction: column; gap: 0.6rem;
@@ -149,7 +150,7 @@ function OrderSummary({ order, serverTotal, orderId }) {
         <div className="bill-order-id">Order #{orderId}</div>
       )}
 
-      <div className="bill-dashes" aria-hidden="true" />
+      <div className="bill-dashes bill-dashes-full" aria-hidden="true" />
 
       <div className="bill-items">
         {order.items.map((item, i) => {
